@@ -1,12 +1,54 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>
-      Ionic Blank
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-split-pane when="lg">
+  <ion-menu [content]="content">
+    <ion-header>
+      <ion-toolbar>
+        <button ion-item (click)="retRoom()">
+          <ion-title>{{folder.na}}</ion-title>
+          <ion-icon *ngIf="folder.id != 0" name="exit" item-right></ion-icon>
+          <ion-icon *ngIf="folder.id == 0 && bookmk==1" name="bookmark" item-right></ion-icon>
+        </button>
+      </ion-toolbar>
+    </ion-header>
 
-<ion-content padding>
-  The world is your oyster.
-  <p>If you get lost, the <a target="_blank" rel="noopener" href="https://beta.ionicframework.com/docs/">docs</a> will be your guide.</p>
-</ion-content>
+    <ion-content>
+      <ion-list>
+        <ion-item-sliding #itemSliding *ngFor="let room of rooms">
+          <button ion-item menuClose (click)="joinRoom(room)" (press)="bookmark(room)">
+            <span [class.folder]="room.folder==1">{{room.na}}</span>
+            <ion-icon *ngIf="room.allow==0" name="lock" item-right></ion-icon>
+            <ion-icon *ngIf="room.bookmark==1" name="bookmark" item-right></ion-icon>
+          </button>
+          <ion-item-options side="left">
+            <button ion-button icon-only color="danger" (click)="bookmark(room)">
+              <ion-icon name="bookmark" item-right></ion-icon>
+            </button>
+          </ion-item-options>
+        </ion-item-sliding>
+      </ion-list>
+    </ion-content>
+  </ion-menu>
+  <ion-menu [content]="content" side="right">
+    <ion-header>
+      <ion-toolbar>
+        <ion-item>
+          <input placeholder="メンバー検索" [(ngModel)]="userX" (keyup.enter)="searchMember()">
+          <button ion-button clear icon-only item-right (click)="searchMember()">
+            <ion-icon name="search"></ion-icon>
+          </button>
+        </ion-item>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content>
+      <ion-list>
+        <button ion-item *ngFor="let member of members" (click)="letMember(member)">
+          <ion-avatar item-left>
+            <img [src]="member.avatorUrl">
+          </ion-avatar>
+          <h2>{{member.name}}</h2>
+          <ion-icon name="{{member.rtc}}" item-right></ion-icon>
+        </button>
+      </ion-list>
+    </ion-content>
+  </ion-menu>
+  <ion-nav [root]="rootPage" main #content></ion-nav>
+</ion-split-pane>
