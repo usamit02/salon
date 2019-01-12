@@ -1,0 +1,21 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-item>
+      <input placeholder="メンバー検索" [(ngModel)]="userX" (keyup.enter)="searchMember()">
+      <button ion-button clear icon-only item-right (click)="searchMember()">
+        <ion-icon name="search"></ion-icon>
+      </button>
+    </ion-item>
+  </ion-toolbar>
+</ion-header>
+<ion-content>
+  <ion-list>
+    <button ion-item *ngFor="let member of members" (click)="letMember(member)">
+      <ion-avatar item-left>
+        <img [src]="member.avatorUrl">
+      </ion-avatar>
+      <h2>{{member.name}}</h2>
+      <ion-icon name="{{member.rtc}}" item-right></ion-icon>
+    </button>
+  </ion-list>
+</ion-content>

@@ -1,15 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpRequest, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class PhpService {
   url: string = "http://localhost/public_html/";
   //url: string = "https://bloggersguild.cf/";
   constructor(private http: HttpClient) { }
 
-  query(url: string, params: any): Observable<Object> {
+  get(url: string, params: any): Observable<Object> {
     return this.http.get(this.url + url, { params: params });
   }
   post(url: string, params: any): Observable<Object> {
