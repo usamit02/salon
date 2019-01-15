@@ -5,7 +5,6 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { PhpService } from './provider/php.service';
 import { User, DataService } from './provider/data.service';
 import { Router } from '@angular/router';
-const LOGOUTUSER = { id: "", na: "", avatar: "", p: 0 };
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html'
@@ -26,7 +25,7 @@ export class AppComponent {
     });
   }
   ngOnInit() {
-    this.user = LOGOUTUSER;
+    this.user = new User;
     this.data.userState.subscribe((user: User) => {
       this.user = user;
       this.readRooms();

@@ -4,7 +4,7 @@ import { MainComponent } from './main/main.component';
 import { RoomComponent } from './room/room.component';
 
 const routes: Routes = [
-  { path: '', redirectTo: 'home', pathMatch: 'full' },
+  { path: '', redirectTo: 'home/room/2', pathMatch: 'full' },
   {
     //path: 'home', loadChildren: './home/home.module#HomePageModule',
     path: 'home', component: MainComponent,

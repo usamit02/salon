@@ -17,7 +17,7 @@
       </ion-header>
       <ion-content>
         <ion-list>
-          <ion-item *ngFor="let room of rooms" (click)="joinRoom(room.id)" (press)="bookmark(room.id)">
+          <ion-item *ngFor="let room of rooms" button="true" (click)="joinRoom(room.id)" (press)="bookmark(room.id)">
             <span [class.folder]="room.folder==1">{{room.na}}</span>
             <ion-icon *ngIf="room.allow==0" name="lock" item-right></ion-icon>
             <ion-icon *ngIf="room.bookmark==1" name="bookmark" item-right></ion-icon>

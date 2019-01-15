@@ -8,7 +8,10 @@ export class DataService {
   userSubject = new Subject<User>();
   userState = this.userSubject.asObservable();
   rooms = [];
-  roomSubject = new Subject<Array<Room>>();
+  roomsSubject = new Subject<Array<Room>>();
+  roomsState = this.roomsSubject.asObservable();
+  room = new Room();
+  roomSubject = new Subject<Room>();
   roomState = this.roomSubject.asObservable();
   constructor() { }
 
@@ -16,11 +19,25 @@ export class DataService {
     if (this.user.id !== user.id) {
       this.user = user;
       this.userSubject.next(user);
+      console.log("login");
+    }
+  }
+  logout() {
+    if (this.user.id) {
+      this.user = new User;
+      this.userSubject.next(this.user);
+      console.log("logout");
     }
   }
   readRooms(rooms) {
     this.rooms = rooms;
-    this.roomSubject.next(rooms)
+    this.roomsSubject.next(rooms);
+    console.log('readRooms');
+  }
+  joinRoom(room: Room) {
+    this.room = room;
+    this.roomSubject.next(room);
+    console.log('joinRoom:' + room.na);
   }
 }
 
@@ -31,8 +48,8 @@ export class User {
   p: number = 0;
 }
 export class Room {
-  id: number = 1;
-  na: string = "";
+  id: number = 2;
+  na: string = "メインラウンジ";
   discription: string = "";
   parent: number = 0;
   idx: number = 0;

@@ -1,4 +1,5 @@
-<!-- <story *ngIf="room.story" [room]="room" [user]="user"></story>
+<!-- <story *ngIf="room.story" [room]="room" [user]="user"></story>-->
+<p>room works!{{room.id}}</p>
 <ion-list class="chat-list">
   <ion-item *ngFor="let chat of chats">
     <ion-avatar item-left>
@@ -8,5 +9,4 @@
     <span class="msg-date">{{chat.sendDate | date:'short'}}</span>
     <p text-wrap>{{chat.message}}</p>
   </ion-item>
-</ion-list> -->
-<p>room works!{{room.id}}</p>
+</ion-list>

@@ -3,8 +3,7 @@ import { ActionSheetController, ToastController, IonContent } from '@ionic/angul
 import * as firebase from 'firebase';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { PhpService } from '../provider/php.service';
-import { User, DataService } from '../provider/data.service';
-const LOGOUTUSER = { id: "", na: "", avatar: "", p: 0 };
+import { User, Room, DataService } from '../provider/data.service';
 @Component({
   selector: 'app-main',
   templateUrl: './main.component.html',
@@ -12,12 +11,10 @@ const LOGOUTUSER = { id: "", na: "", avatar: "", p: 0 };
 })
 export class MainComponent {
   @ViewChild(IonContent) content: IonContent;
-  room;
-  rooms = [];
+  room: Room;
   user: User;
   userX: string;
   bookmk: boolean = false;
-  chats = [];
   writer: string;
   message: string;
   constructor(
@@ -27,12 +24,12 @@ export class MainComponent {
   ) {
   }
   ngOnInit() {
-    this.user = LOGOUTUSER;
-    this.room = { id: 2, na: "メインラウンジ", allow: 1, parent: 1, folder: 0, bookmark: 0, chat: true, story: false };
-    this.rooms = this.data.rooms;
+    this.user = new User;
+    this.room = new Room;
+    this.data.roomState.subscribe(room => this.room = room);
   }
   ngAfterViewInit() {
-    firebase.auth().onAuthStateChanged((user) => {
+    firebase.auth().onAuthStateChanged(user => {
       if (user) {
         this.php.get("user", { uid: user.uid, na: user.displayName, avatar: user.photoURL }).subscribe((res: any) => {
           if (res.msg !== "ok") {
@@ -40,12 +37,12 @@ export class MainComponent {
           }
           this.user = { id: res.id, na: res.na, avatar: res.avatar, p: res.p };
           this.data.login(this.user);
-          // let dummy = <HTMLButtonElement>document.getElementById("dummy");
-          // dummy.click();
+          let dummy = <HTMLButtonElement>document.getElementById("dummy");
+          dummy.click();
         });
       } else {
-        this.user = LOGOUTUSER;
-        this.data.user = LOGOUTUSER;
+        this.user = new User;
+        this.data.logout();
       }
     });
   }
