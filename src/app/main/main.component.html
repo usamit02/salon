@@ -40,7 +40,6 @@
       </div>
       <div *ngSwitchDefault>
         <ion-item no-padding>
-          <textarea #chat_input placeholder="気軽に書き込んで" [(ngModel)]="message" (keydown)="keyPress()" (keydown.enter)="sendMsg()"></textarea>
           <ion-button clear icon-only item-right (click)="sendMsg()">
             <ion-icon name="ios-send" ios="ios-send" md="md-send"></ion-icon>
           </ion-button>

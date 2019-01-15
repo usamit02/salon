@@ -5,8 +5,25 @@
 -->
 <ion-app>
   <ion-split-pane contentId="menu-content">
-    <ion-menu contentId="menu-content">
-      <app-room></app-room>
+    <ion-menu contentId="menu-content" side="start">
+      <ion-header>
+        <ion-toolbar>
+          <ion-item button="true" (click)="retRoom()">
+            <ion-title>{{folder.na}}</ion-title>
+            <ion-icon *ngIf="folder.id != 0" name="exit" item-right></ion-icon>
+            <ion-icon *ngIf="folder.id == 0 && bookmk==1" name="bookmark" item-right></ion-icon>
+          </ion-item>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content>
+        <ion-list>
+          <ion-item *ngFor="let room of rooms" (click)="joinRoom(room.id)" (press)="bookmark(room.id)">
+            <span [class.folder]="room.folder==1">{{room.na}}</span>
+            <ion-icon *ngIf="room.allow==0" name="lock" item-right></ion-icon>
+            <ion-icon *ngIf="room.bookmark==1" name="bookmark" item-right></ion-icon>
+          </ion-item>
+        </ion-list>
+      </ion-content>
     </ion-menu>
     <ion-menu contentId="menu-content" side="end">
       <app-member></app-member>

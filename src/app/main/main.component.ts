@@ -6,17 +6,18 @@ import { PhpService } from '../provider/php.service';
 import { User, DataService } from '../provider/data.service';
 const LOGOUTUSER = { id: "", na: "", avatar: "", p: 0 };
 @Component({
-  selector: 'app-home',
-  templateUrl: 'home.page.html',
-  styleUrls: ['home.page.scss'],
+  selector: 'app-main',
+  templateUrl: './main.component.html',
+  styleUrls: ['./main.component.scss']
 })
-export class HomePage {
+export class MainComponent {
   @ViewChild(IonContent) content: IonContent;
   room;
   rooms = [];
   user: User;
   userX: string;
   bookmk: boolean = false;
+  chats = [];
   writer: string;
   message: string;
   constructor(
@@ -99,5 +100,5 @@ export class HomePage {
       this.content.scrollToBottom();
     }, 400);
   }
-}
 
+}

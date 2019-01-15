@@ -8,14 +8,14 @@ export class PhpService {
   constructor(private http: HttpClient) { }
 
   get(url: string, params: any): Observable<Object> {
-    return this.http.get(this.url + url, { params: params });
+    return this.http.get(this.url + url + ".php", { params: params });
   }
   post(url: string, params: any): Observable<Object> {
     let body = new HttpParams;
     for (const key of Object.keys(params)) {
       body = body.append(key, params[key]);
     }
-    return this.http.post(this.url + url, body, {
+    return this.http.post(this.url + url + ".php", body, {
       headers: new HttpHeaders({ "Content-Type": "application/x-www-form-urlencoded" })
     });
   }
@@ -25,7 +25,7 @@ export class PhpService {
       fd.append(key, formData[key]);
     }
     let params = new HttpParams();
-    const req = new HttpRequest('POST', this.url + url, fd, { params: params, reportProgress: true });
+    const req = new HttpRequest('POST', this.url + url + ".php", fd, { params: params, reportProgress: true });
     return this.http.request(req);
     //return this.http.post(this.url + url, fd, { reportProgress: true,observe:'events' });
   }

@@ -6,7 +6,7 @@ import { Socket } from 'ngx-socket-io';
   styleUrls: ['./member.component.scss']
 })
 export class MemberComponent implements OnInit {
-
+  userX: string;
   members = [];
   constructor(private socket: Socket) { }
 

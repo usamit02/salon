@@ -5,10 +5,12 @@ import { RouterModule } from '@angular/router';
 import { Socket } from 'ngx-socket-io';
 import { HomePage } from './home.page';
 
+import { FormsModule } from '@angular/forms';
 @NgModule({
   imports: [
     CommonModule,
     IonicModule,
+    FormsModule,
     RouterModule.forChild([
       {
         path: '',

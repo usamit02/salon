@@ -12,10 +12,12 @@ import { socketConfig, firebaseConfig } from '../environments/environment';
 import { AngularFireModule } from 'angularfire2';
 import { AngularFireAuthModule } from 'angularfire2/auth';
 import { PhpService } from './provider/php.service';
-import { RoomComponent } from './room/room.component';
+import { DataService } from './provider/data.service';
 import { MemberComponent } from './member/member.component';
+import { RoomComponent } from './room/room.component';
+import { MainComponent } from './main/main.component';
 @NgModule({
-  declarations: [AppComponent, RoomComponent, MemberComponent],
+  declarations: [AppComponent, MemberComponent, RoomComponent, MainComponent],
   entryComponents: [],
   imports: [
     BrowserModule,
@@ -30,7 +32,8 @@ import { MemberComponent } from './member/member.component';
     StatusBar,
     SplashScreen,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-    PhpService
+    PhpService,
+    DataService
   ],
   bootstrap: [AppComponent]
 })
