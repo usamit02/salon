@@ -13,7 +13,7 @@ export class MemberComponent implements OnInit {
   ngOnInit() {
     this.socket.connect();
     this.socket.on("join", users => {
-      console.log(users[0].name + "_" + users[0].rtc);
+      console.log(users[0].na + "_" + users[0].rtc);
       this.members = users;
     });
     this.socket.on("typing", name => {

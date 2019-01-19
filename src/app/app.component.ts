@@ -2,22 +2,23 @@ import { Component } from '@angular/core';
 import { Platform } from '@ionic/angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
-import { PhpService } from './provider/php.service';
-import { User, DataService } from './provider/data.service';
+import { Room, DataService } from './provider/data.service';
 import { Router } from '@angular/router';
+import { Socket } from 'ngx-socket-io';
+const FOLDER = { id: 1, na: "ブロガーズギルド", discription: "", idx: 0, chat: false, story: false, plan: 0, parent: 1, folder: true, bookmark: false, };
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html'
 })
 export class AppComponent {
-  allRooms = [];
-  rooms;
-  folder = { id: 1, na: "ブロガーズギルド", parent: 1, folder: 0 };
+  allRooms: Array<Room> = [];
+  rooms: Array<Room> = [];
+  folder: Room = FOLDER;
   bookmk: boolean = false;
-  user: User;
+  members = [];
   constructor(
     private platform: Platform, private splashScreen: SplashScreen, private statusBar: StatusBar,
-    private php: PhpService, private data: DataService, private router: Router,
+    private data: DataService, private router: Router, private socket: Socket
   ) {
     this.platform.ready().then(() => {
       this.statusBar.styleDefault();
@@ -25,24 +26,33 @@ export class AppComponent {
     });
   }
   ngOnInit() {
-    this.user = new User;
-    this.data.userState.subscribe((user: User) => {
-      this.user = user;
-      this.readRooms();
+    this.data.roomsState.subscribe((rooms: any) => {
+      this.allRooms = rooms;
+      this.rooms = this.allRooms.filter(room => room.parent === this.folder.id);
+    });
+    this.socket.connect();
+    this.socket.on("join", users => {
+      console.log(users[0].na + "_" + users[0].rtc);
+      this.members = users;
     });
   }
-  readRooms() {
-    this.php.get("room", { uid: this.user.id }).subscribe((res: any) => {
-      this.allRooms = res;
-      this.data.readRooms(res);
-      if (this.bookmk) {
-        this.rooms = res.filter(r => { if (r.bookmark === 1) return true; });
-      } else {
-        this.rooms = res.filter(r => { if (r.parent === this.folder.id) return true; });
-      }
-    });
+  joinRoom(room) {
+    if (room.folder) {
+      this.rooms = this.allRooms.filter(r => r.parent === room.id);
+      this.folder = room;
+    }
+    this.router.navigate(['/home/room', room.id]);
   }
-  joinRoom(id) {
-    this.router.navigate(['/home/room', id]);
+  retRoom() {
+    if (this.folder.id === 1 && this.data.user.id) {
+      this.bookmk = !this.bookmk;
+    }
+    if (this.bookmk) {
+      this.rooms = this.allRooms.filter(room => room.bookmark);
+    } else {
+      let folder = this.allRooms.filter(room => room.id === this.folder.parent);
+      this.folder = folder.length ? folder[0] : FOLDER;
+      this.rooms = this.allRooms.filter(room => room.parent === this.folder.id);
+    }
   }
 }

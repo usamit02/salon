@@ -1,18 +1,19 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { Room, DataService } from '../provider/data.service';
-import * as firebase from 'firebase';
-//const ROOM = { id: 2, na: "メインラウンジ", discription: "", idx: 0, plan: 0, allow: 1, parent: 1, folder: false, bookmark: 0, chat: true, story: false };
+import { AngularFirestore } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 @Component({
   selector: 'app-room',
   templateUrl: './room.component.html',
   styleUrls: ['./room.component.scss']
 })
 export class RoomComponent implements OnInit {
-  room: Room = new Room;
-  chats = [];
-  constructor(private route: ActivatedRoute, private data: DataService, ) { }
-
+  room: Room;
+  chats = [];//: Observable<any[]>;
+  chatEnd: Date = new Date();
+  constructor(private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore) { }
   ngOnInit() {
     this.route.params.subscribe(params => {
       if (params.id === undefined) {
@@ -21,6 +22,7 @@ export class RoomComponent implements OnInit {
       } else if (this.data.rooms.length) {
         this.readRooms(this.data.rooms, params.id);
       } else {
+        this.data.readRooms();
         this.data.roomsState.subscribe(rooms => {
           this.readRooms(rooms, params.id);
         });
@@ -29,24 +31,36 @@ export class RoomComponent implements OnInit {
   }
   readRooms(rooms, id) {
     let room = rooms.filter(room => { return room.id == id });
-    if (room.length) {
-      this.room = room[0];
-      this.readChat();
-    }
+    this.room = room.length ? room[0] : new Room;
+    this.readChat();
   }
   readChat() {
     this.data.joinRoom(this.room);
-    if (this.room.chat) {
-      firebase.database().ref('chat/' + this.room.id).on('value', resp => {
-        if (resp) {
-          this.chats = [];
-          resp.forEach(childSnapshot => {
-            const chat = childSnapshot.val();
-            chat.key = childSnapshot.key;
-            this.chats.push(chat);
-          });
-        }
+    let chat = this.db.collection('room').doc(this.room.id.toString()).collection('chat', ref => ref.orderBy('upd'));
+    chat.valueChanges().subscribe(chats => {
+      this.chats = chats;
+    });
+
+
+
+    /*
+    chat.get().subscribe(data => {
+      
+    })
+    chat.stateChanges(['added']).subscribe(action => {
+        let a = action;
       });
-    }
+    subscribe(chats => {
+      this.chats = chats;
+      let chatEnd = this.chats[0].upd;
+      let chatStart = this.chats[this.chats.length - 1].upd;
+      console.log(chatStart + "から" + chatEnd);
+      
+    });*/
+
+
+    //, ref => ref.orderBy('upd', 'desc').startAt(this.chatEnd).limit(20)).
+
+
   }
 }

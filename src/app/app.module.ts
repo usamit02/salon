@@ -11,15 +11,15 @@ import { SocketIoModule } from 'ngx-socket-io';
 import { socketConfig, firebaseConfig } from '../environments/environment';
 import { AngularFireModule } from 'angularfire2';
 import { AngularFireAuthModule } from 'angularfire2/auth';
+import { AngularFirestoreModule } from '@angular/fire/firestore';
 import { FormsModule } from '@angular/forms';
 import { PhpService } from './provider/php.service';
 import { DataService } from './provider/data.service';
-import { MemberComponent } from './member/member.component';
 import { RoomComponent } from './room/room.component';
 import { MainComponent } from './main/main.component';
 
 @NgModule({
-  declarations: [AppComponent, MemberComponent, RoomComponent, MainComponent],
+  declarations: [AppComponent, RoomComponent, MainComponent],
   entryComponents: [],
   imports: [
     BrowserModule,
@@ -29,6 +29,7 @@ import { MainComponent } from './main/main.component';
     SocketIoModule.forRoot(socketConfig),
     AngularFireModule.initializeApp(firebaseConfig),
     AngularFireAuthModule,
+    AngularFirestoreModule,
     FormsModule,
   ],
   providers: [
