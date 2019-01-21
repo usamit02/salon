@@ -1,7 +1,7 @@
 <!-- <story *ngIf="room.story" [room]="room" [user]="user"></story>
 <p>room works!{{room.id}}</p>-->
-<ion-virtual-scroll [items]="chats">
-  <ion-item *virtualItem="let chat">
+<ion-list>
+  <ion-item *ngFor="let chat of chats">
     <!--(chats | async)"> -->
     <ion-avatar item-start>
       <ion-img [src]="chat.avatar"></ion-img>
@@ -10,5 +10,5 @@
     <span class="msg-date">{{chat.upd.toDate() | date:'short'}}</span>
     <p text-wrap>{{chat.txt}}</p>
   </ion-item>
-  <div *ngIf="!chats || chats.length===0"><span style="color:lightgrey">気軽に書き込んで</span></div>
-</ion-virtual-scroll>
+  <div *ngIf="!chats || chats.length===0"><span style="color:lightgrey">一番乗りだ！</span></div>
+</ion-list>

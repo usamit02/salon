@@ -104,4 +104,8 @@ export class MainComponent {
   keyPress() {
 
   }
+  ngOnDestroy() {
+    this.data.userSubject.unsubscribe();
+    this.data.roomSubject.unsubscribe();
+  }
 }
