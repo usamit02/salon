@@ -14,6 +14,8 @@ export class DataService {
   room = new Room();
   roomSubject = new Subject<Room>();
   roomState = this.roomSubject.asObservable();
+  scrollSubject = new Subject();
+  scrollState = this.scrollSubject.asObservable();
   constructor(private php: PhpService, ) { }
   login(user) {
     if (this.user.id !== user.uid) {
@@ -49,6 +51,9 @@ export class DataService {
     this.room = room;
     this.roomSubject.next(room);
     console.log('joinRoom:' + room.na);
+  }
+  scroll(direction) {
+    this.scrollSubject.next(direction);
   }
 }
 

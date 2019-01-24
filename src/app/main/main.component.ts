@@ -31,6 +31,15 @@ export class MainComponent {
       this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: this.user, rtc: "" })
       this.room = room
     });
+    this.data.scrollState.subscribe(direction => {
+      setTimeout(() => {
+        if (direction === 'top') {
+          this.content.scrollToBottom();
+        } else {
+          this.content.scrollToTop();
+        }
+      }, 500);
+    })
   }
   ngAfterViewInit() {
     firebase.auth().onAuthStateChanged(user => {
@@ -84,7 +93,7 @@ export class MainComponent {
     let txt = this.message.trim();
     let upd = new Date();
     if (!txt) return;
-    // for (let i = 0; i < 100; i++) {
+    //for (let i = 0; i < 100; i++) {
     //  upd.setDate(upd.getDate() - 1); txt = i.toString();
     this.db.collection('room').doc(this.room.id.toString()).collection('chat').add({
       uid: this.user.id, na: this.user.na, avatar: this.user.avatar, txt: txt, upd: upd
