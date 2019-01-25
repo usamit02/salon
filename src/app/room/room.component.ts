@@ -3,7 +3,6 @@ import { ActivatedRoute, Params } from '@angular/router';
 import { Room, DataService } from '../provider/data.service';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { Observable, BehaviorSubject } from 'rxjs';
-import { map } from 'rxjs/operators';
 @Component({
   selector: 'app-room',
   templateUrl: './room.component.html',
@@ -11,10 +10,8 @@ import { map } from 'rxjs/operators';
 })
 export class RoomComponent implements OnInit {
   room: Room;
-  _chats: BehaviorSubject<any[]>;
-  chatsOb: Observable<any[]>;
   chats = [];
-  cursor;//Date = new Date();
+  cursor: Date = new Date();
   constructor(private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore) { }
   ngOnInit() {
     this.route.params.subscribe(params => {
