@@ -29,17 +29,8 @@ export class MainComponent {
     this.data.userState.subscribe(user => this.user = user);
     this.data.roomState.subscribe(room => {
       this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: this.user, rtc: "" })
-      this.room = room
+      this.room = room;
     });
-    this.data.scrollState.subscribe(direction => {
-      setTimeout(() => {
-        if (direction === 'top') {
-          this.content.scrollToBottom();
-        } else {
-          this.content.scrollToTop();
-        }
-      }, 500);
-    })
   }
   ngAfterViewInit() {
     firebase.auth().onAuthStateChanged(user => {
@@ -100,9 +91,6 @@ export class MainComponent {
     });
     //}
     this.message = "";
-    setTimeout(() => {
-      this.content.scrollToBottom();
-    }, 400);
   }
   keyPress() {
 

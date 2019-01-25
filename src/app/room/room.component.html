@@ -1,9 +1,6 @@
 <!-- <story *ngIf="room.story" [room]="room" [user]="user"></story>
   <p>room works!{{room.id}}</p>-->
-<ion-infinite-scroll position="top" threshold="-10px" (ionInfinite)="chatLoad($event,'top')">
-  <ion-infinite-scroll-content loadingSpinner="bubbles">
-  </ion-infinite-scroll-content>
-</ion-infinite-scroll>
+
 <ion-list>
   <ion-item *ngFor="let chat of chats">
     <!--(chats | async)"> -->
@@ -16,7 +13,7 @@
   </ion-item>
   <div *ngIf="!chats || chats.length===0"><span style="color:lightgrey">一番乗りだ！</span></div>
 </ion-list>
-<ion-infinite-scroll position="bottom" threshold="-10px" (ionInfinite)="chatLoad($event,'bottom')">
+<ion-infinite-scroll position="bottom" threshold="10%" (ionInfinite)="chatLoad($event)">
   <ion-infinite-scroll-content loadingSpinner="bubbles">
   </ion-infinite-scroll-content>
 </ion-infinite-scroll>
