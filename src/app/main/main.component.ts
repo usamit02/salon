@@ -82,14 +82,10 @@ export class MainComponent {
   }
   sendMsg() {
     let txt = this.message.trim();
-    let upd = new Date();
     if (!txt) return;
-    //for (let i = 0; i < 100; i++) {
-    //  upd.setDate(upd.getDate() - 1); txt = i.toString();
     this.db.collection('room').doc(this.room.id.toString()).collection('chat').add({
-      uid: this.user.id, na: this.user.na, avatar: this.user.avatar, txt: txt, upd: upd
+      uid: this.user.id, na: this.user.na, avatar: this.user.avatar, txt: txt, upd: new Date()
     });
-    //}
     this.message = "";
   }
   keyPress() {

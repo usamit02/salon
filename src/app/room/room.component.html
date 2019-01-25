@@ -3,12 +3,11 @@
 
 <ion-list>
   <ion-item *ngFor="let chat of chats">
-    <!--(chats | async)"> -->
     <ion-avatar item-start>
       <ion-img [src]="chat.avatar"></ion-img>
     </ion-avatar>
-    <span class="msg-name">{{chat.na}}</span>
-    <span class="msg-date">{{chat.upd.toDate() | date:'short'}}</span>
+    <span class="chatna">{{chat.na}}</span>
+    <span class="chatdate">{{chat.upd.toDate() | date:'short'}}</span>
     <p text-wrap>{{chat.txt}}</p>
   </ion-item>
   <div *ngIf="!chats || chats.length===0"><span style="color:lightgrey">一番乗りだ！</span></div>
