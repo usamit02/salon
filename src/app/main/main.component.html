@@ -30,23 +30,21 @@
 </ion-content>
 <ion-footer>
   <ion-toolbar no-padding>
-    <div [ngSwitch]="user.id">
-      <ion-item *ngSwitchCase="false" button="true" (click)="login()">
-        ログインしてコミュニケーションを楽しもう
-        <ion-icon name="logo-twitter"></ion-icon>
-        <ion-icon name="logo-facebook"></ion-icon>
-        <ion-icon name="logo-google"></ion-icon>
+    <ion-item *ngIf="!user.id" button="true" (click)="login()">
+      ログインしてコミュニケーションを楽しもう
+      <ion-icon name="logo-twitter"></ion-icon>
+      <ion-icon name="logo-facebook"></ion-icon>
+      <ion-icon name="logo-google"></ion-icon>
+    </ion-item>
+    <div [class.none]="!user.id">
+      <ion-item no-padding>
+        <!--   <textarea #chat_input placeholder="気軽に書き込んで" [(ngModel)]="message" (keydown)="keyPress()" (keydown.enter)="sendMsg()"></textarea>-->
+        <div id="tiny"></div>
+        <ion-button clear icon-only item-right (click)="sendMsg()">
+          <ion-icon name="ios-send" ios="ios-send" md="md-send"></ion-icon>
+        </ion-button>
       </ion-item>
-      <div *ngSwitchDefault>
-        <ion-item no-padding>
-          <textarea #chat_input placeholder="気軽に書き込んで" [(ngModel)]="message" (keydown)="keyPress()" (keydown.enter)="sendMsg()"></textarea>
-          <ion-button clear icon-only item-right (click)="sendMsg()">
-            <ion-icon name="ios-send" ios="ios-send" md="md-send"></ion-icon>
-          </ion-button>
-        </ion-item>
-        <p id="writer">{{writer}}</p>
-
-      </div>
+      <p id="writer">{{writer}}</p>
     </div>
   </ion-toolbar>
 </ion-footer>

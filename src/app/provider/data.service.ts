@@ -16,6 +16,8 @@ export class DataService {
   roomState = this.roomSubject.asObservable();
   scrollSubject = new Subject();
   scrollState = this.scrollSubject.asObservable();
+  mentionSubject = new Subject();
+  mentionState = this.mentionSubject.asObservable();
   constructor(private php: PhpService, ) { }
   login(user) {
     if (this.user.id !== user.uid) {
@@ -55,6 +57,9 @@ export class DataService {
   scroll(direction) {
     this.scrollSubject.next(direction);
   }
+  mention(member) {
+    this.mentionSubject.next(member);
+  }
 }
 
 export class User {
@@ -74,4 +79,11 @@ export class Room {
   story: boolean = false;
   plan: number = 0;
   bookmark: boolean = false;
+  csd: Date;
+}
+export class Member {
+  id: string = "";
+  na: string = "";
+  avatar: string = "";
+  p?: number = 0;
 }

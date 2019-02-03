@@ -1,21 +1,22 @@
 <ion-header>
   <ion-toolbar>
-    <ion-item>
-      <input placeholder="メンバー検索" (keyup.enter)="searchMember()">
-      <ion-button clear icon-only item-right (click)="searchMember()">
-        <ion-icon name="search"></ion-icon>
-      </ion-button>
+    <ion-item button="true" (click)="close()">
+      <ion-title>{{member.na}}</ion-title>
+      <ion-icon name="exit" item-right></ion-icon>
     </ion-item>
   </ion-toolbar>
 </ion-header>
 <ion-content>
+  <ion-img [src]="member.avatar"></ion-img>
   <ion-list>
-    <ion-item *ngFor="let member of members" button="true" (click)="letMember(member)">
-      <ion-avatar item-left>
-        <img [src]="member.avatar">
-      </ion-avatar>
-      <span>{{member.na}}</span>
-      <!-- <ion-icon [name]="member.rtc" item-right></ion-icon> -->
+    <ion-item button="true" (click)="mention()">
+      <span>メンションする</span>
+    </ion-item>
+    <ion-item button="true" (click)="dm()">
+      <span>ダイレクトメールを送る</span>
+    </ion-item>
+    <ion-item button="true" (click)="dm()">
+      <span>詳細を見る</span>
     </ion-item>
   </ion-list>
 </ion-content>

@@ -1,29 +1,26 @@
 import { Component, OnInit } from '@angular/core';
-import { Socket } from 'ngx-socket-io';
+import { PopoverController, NavParams } from '@ionic/angular';
+import { DataService } from '../provider/data.service';
+
 @Component({
   selector: 'app-member',
   templateUrl: './member.component.html',
   styleUrls: ['./member.component.scss']
 })
 export class MemberComponent implements OnInit {
-  userX: string;
-  members = [];
-  constructor(private socket: Socket) { }
-
+  member;
+  constructor(private navParams: NavParams, private pop: PopoverController, private data: DataService) { }
   ngOnInit() {
-    this.socket.connect();
-    this.socket.on("join", users => {
-      console.log(users[0].na + "_" + users[0].rtc);
-      this.members = users;
-    });
-    this.socket.on("typing", name => {
-      //this.session.typing(name);
-      //this.session.clearTyping();
-    });
-    this.socket.on("chat", chat => {
-      //this.session.chat(chat);
-      //this.session.clearChat();
-    });
+    this.member = this.navParams.get('member');
   }
+  mention() {
+    this.data.mention(this.member);
+    this.close();
+  }
+  dm() {
 
+  }
+  close() {
+    this.pop.dismiss();
+  }
 }

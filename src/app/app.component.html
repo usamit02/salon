@@ -29,7 +29,7 @@
       <ion-header>
         <ion-toolbar>
           <ion-item>
-            <input placeholder="メンバー検索" (keyup.enter)="searchMember()">
+            <ion-searchbar placeholder="メンバー検索" (ionClear)="searchMemberClear()" [(ngModel)]="member" (keyup.enter)="searchMember()"></ion-searchbar>
             <ion-button clear icon-only item-right (click)="searchMember()">
               <ion-icon name="search"></ion-icon>
             </ion-button>
@@ -37,13 +37,30 @@
         </ion-toolbar>
       </ion-header>
       <ion-content>
+        <ion-text *ngIf="!onMembers.length && !offMembers.length">誰もいない...</ion-text>
+        <ion-item-divider *ngIf="onMembers.length" color="secondary">
+          <ion-label>
+            オンライン{{onMembers.length}}人
+          </ion-label>
+        </ion-item-divider>
         <ion-list>
-          <ion-item *ngFor="let member of members" button="true" (click)="letMember(member)">
+          <ion-item *ngFor="let member of onMembers" button="true" (click)="popMember(member,$event)">
+            <ion-avatar item-left><img [src]="member.avatar"></ion-avatar>
+            <span>{{member.na}}</span>
+            <!-- <ion-icon [name]="member.rtc" item-right></ion-icon> -->
+          </ion-item>
+        </ion-list>
+        <ion-item-divider *ngIf="offMembers.length" color="secondary">
+          <ion-label>
+            オフライン{{offMembers.length}}人
+          </ion-label>
+        </ion-item-divider>
+        <ion-list>
+          <ion-item *ngFor="let member of offMembers" button="true" (click)="popMember(member,$event)">
             <ion-avatar item-left>
               <img [src]="member.avatar">
             </ion-avatar>
             <span>{{member.na}}</span>
-            <!-- <ion-icon [name]="member.rtc" item-right></ion-icon> -->
           </ion-item>
         </ion-list>
       </ion-content>

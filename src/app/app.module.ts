@@ -8,6 +8,7 @@ import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { HttpClientModule } from '@angular/common/http'
 import { SocketIoModule } from 'ngx-socket-io';
+import { MentionModule } from 'angular-mentions/mention';
 import { socketConfig, firebaseConfig } from '../environments/environment';
 import { AngularFireModule } from 'angularfire2';
 import { AngularFireAuthModule } from 'angularfire2/auth';
@@ -17,10 +18,10 @@ import { PhpService } from './provider/php.service';
 import { DataService } from './provider/data.service';
 import { RoomComponent } from './room/room.component';
 import { MainComponent } from './main/main.component';
-
+import { MemberComponent } from './member/member.component';
 @NgModule({
-  declarations: [AppComponent, RoomComponent, MainComponent],
-  entryComponents: [],
+  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent],
+  entryComponents: [MemberComponent],
   imports: [
     BrowserModule,
     IonicModule.forRoot(),
@@ -31,6 +32,7 @@ import { MainComponent } from './main/main.component';
     AngularFireAuthModule,
     AngularFirestoreModule,
     FormsModule,
+    MentionModule,
   ],
   providers: [
     StatusBar,

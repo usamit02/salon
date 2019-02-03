@@ -1,3 +1,12 @@
 textarea{width:100%;}
 #writer{height: 10px;margin:0;padding:0;}
 .video{color:red;}
+#tiny{
+  width:100%;
+  min-height: 3em;
+  border:2px dotted #0B85A1;
+  border-radius: 3px;
+}
+.none{
+  display:none;
+}
