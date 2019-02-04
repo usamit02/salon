@@ -5,6 +5,7 @@ import { AngularFireAuth } from 'angularfire2/auth';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { User, Room, DataService } from '../provider/data.service';
 import { Socket } from 'ngx-socket-io';
+import { PhpService } from '../provider/php.service';
 declare var tinymce;
 @Component({
   selector: 'app-main',
@@ -44,7 +45,7 @@ export class MainComponent {
   }
   constructor(
     private data: DataService, private afAuth: AngularFireAuth, private socket: Socket, private db: AngularFirestore,
-    private toastCtrl: ToastController, private actionSheetCtrl: ActionSheetController,
+    private toastCtrl: ToastController, private actionSheetCtrl: ActionSheetController, private php: PhpService
   ) {
   }
   ngOnInit() {
@@ -143,6 +144,25 @@ export class MainComponent {
   }
   loadMentions() {
 
+  }
+  onScroll(e) {
+    this.data.currentY = e.detail.currentY;
+  }
+  onScrollEnd(e) {
+    if (this.data.user.id) {
+      let chats = e.currentTarget.children[1].children[0].children;
+      for (let i = 1; i < chats.length; i++) {
+        if (chats[i].offsetTop > this.data.currentY + e.currentTarget.scrollHeight - 30) {
+          let upd = new Date(chats[i - 1].children[2].innerHTML);
+          if (new Date(this.room.csd) < upd) {
+            this.room.csd = upd;
+            this.php.get("room", { uid: this.data.user.id, rid: this.room.id, csd: this.data.dateFormat(this.room.csd) }).subscribe(dummy => { });
+          }
+          console.log("readed=" + upd);
+          break;
+        }
+      }
+    }
   }
   ngOnDestroy() {
     this.data.userSubject.unsubscribe();

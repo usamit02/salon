@@ -8,7 +8,7 @@ export class DataService {
   user = new User();
   userSubject = new Subject<User>();
   userState = this.userSubject.asObservable();
-  rooms = [];
+  rooms: Array<Room> = [];
   roomsSubject = new Subject<Array<Room>>();
   roomsState = this.roomsSubject.asObservable();
   room = new Room();
@@ -18,6 +18,7 @@ export class DataService {
   scrollState = this.scrollSubject.asObservable();
   mentionSubject = new Subject();
   mentionState = this.mentionSubject.asObservable();
+  currentY: number;
   constructor(private php: PhpService, ) { }
   login(user) {
     if (this.user.id !== user.uid) {
@@ -59,6 +60,15 @@ export class DataService {
   }
   mention(member) {
     this.mentionSubject.next(member);
+  }
+  dateFormat(date = new Date()) {//MySQL用日付文字列作成'yyyy-M-d H:m:s'
+    var y = date.getFullYear();
+    var m = date.getMonth() + 1;
+    var d = date.getDate();
+    var h = date.getHours();
+    var min = date.getMinutes();
+    var sec = date.getSeconds();
+    return y + "-" + m + "-" + d + " " + h + ":" + min + ":" + sec;
   }
 }
 

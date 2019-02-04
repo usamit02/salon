@@ -7,7 +7,7 @@ import { Room, DataService } from './provider/data.service';
 import { Router } from '@angular/router';
 import { Socket } from 'ngx-socket-io';
 import { MemberComponent } from './member/member.component';
-const FOLDER = { id: 1, na: "ブロガーズギルド", discription: "", idx: 0, chat: false, story: false, plan: 0, parent: 1, folder: true, bookmark: false, };
+const FOLDER = { id: 1, na: "ブロガーズギルド", discription: "", idx: 0, chat: false, story: false, plan: 0, parent: 1, folder: true, bookmark: false, csd: null };
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html'

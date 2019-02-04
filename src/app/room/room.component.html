@@ -1,19 +1,17 @@
 <!-- <story *ngIf="room.story" [room]="room" [user]="user"></story>
   <p>room works!{{room.id}}</p>-->
-<ion-content [scrollEvents]="true" (ionScroll)="onScroll($event)" (ionScrollEnd)="onScrollEnd($event)">
-  <ion-list>
-    <ion-item *ngFor="let chat of chats">
-      <ion-avatar item-start>
-        <ion-img [src]="chat.avatar"></ion-img>
-      </ion-avatar>
-      <span class="chatna">{{chat.na}}</span>
-      <span class="chatdate">{{chat.upd.toDate() | date:'short'}}</span>
-      <p text-wrap>{{chat.txt}}</p>
-    </ion-item>
-    <div *ngIf="!chats || chats.length===0"><span style="color:lightgrey">一番乗りだ！</span></div>
-  </ion-list>
-  <ion-infinite-scroll position="bottom" threshold="10%" (ionInfinite)="chatLoad($event)">
-    <ion-infinite-scroll-content loadingSpinner="bubbles">
-    </ion-infinite-scroll-content>
-  </ion-infinite-scroll>
-</ion-content>
+<ion-list>
+  <ion-item *ngFor="let chat of chats" [class.readed]="chat.readed">
+    <ion-avatar item-start>
+      <ion-img [src]="chat.avatar"></ion-img>
+    </ion-avatar>
+    <span class="chatna">{{chat.na}}</span>
+    <span class="chatdate">{{chat.upd.toDate() | date:'short'}}</span>
+    <p text-wrap>{{chat.txt}}</p>
+  </ion-item>
+  <div *ngIf="!chats || chats.length===0"><span style="color:lightgrey">一番乗りだ！</span></div>
+</ion-list>
+<ion-infinite-scroll position="bottom" threshold="10%" (ionInfinite)="chatLoad($event)">
+  <ion-infinite-scroll-content loadingSpinner="bubbles">
+  </ion-infinite-scroll-content>
+</ion-infinite-scroll>

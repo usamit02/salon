@@ -16,9 +16,10 @@ export class RoomComponent implements OnInit {
   chats = [];
   cursor: Date = new Date();
   chatSb: Subscription;
-  currentY: number;
-  constructor(private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore,
-    private php: PhpService) { }
+  csd: Date;
+  readedFlag: boolean;
+  constructor(private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
+    , private php: PhpService) { }
   ngOnInit() {
     this.route.params.subscribe(params => {
       if (params.id === undefined) {
@@ -42,12 +43,18 @@ export class RoomComponent implements OnInit {
   chatInit() {
     this.data.joinRoom(this.room);
     this.cursor = new Date();
+    this.csdWrite(new Date());
+    this.data.currentY = 0;
+    this.readedFlag = true;
     this.chatLoad(false);
     if (!this.chatSb) {
       this.chatSb = this.db.collection('room').doc(this.room.id.toString()).collection('chat', ref =>
         ref.where('upd', '>', this.cursor)).valueChanges().subscribe(data => {
           if (data.length) {
             this.chats.unshift(data[data.length - 1]);
+            if (this.data.currentY === 0) {
+              this.csdWrite(data[0].upd.toDate());
+            }
           }
         });
     }
@@ -57,7 +64,16 @@ export class RoomComponent implements OnInit {
       .where('upd', '<', this.cursor).limit(20)).get().subscribe(query => {
         let docs = [];
         query.forEach(doc => {
-          docs.push(doc.data());
+          var d = doc.data();
+          if (this.room.csd && this.readedFlag) {
+            let upd = d.upd.toDate();
+            let csd = new Date(this.room.csd);
+            if (upd <= csd) {
+              d.readed = true;
+              this.readedFlag = false;
+            }
+          }
+          docs.push(d);
         });
         if (docs.length) {
           this.cursor = docs[docs.length - 1].upd.toDate();
@@ -68,22 +84,9 @@ export class RoomComponent implements OnInit {
         }
       });
   }
-  onScroll(e) {
-    this.currentY = e.detail.currentY;
-  }
-  onScrollEnd(e) {
+  csdWrite(csd: Date) {
     if (this.data.user.id) {
-      let chats = e.currentTarget.children[0].children;
-      for (let i = 1; i < chats.length; i++) {
-        if (chats[i].offsetTop > this.currentY + e.currentTarget.scrollHeight - 30) {
-          if (this.room.csd < this.chats[i - 1].upd) {
-            this.room.csd = this.chats[i - 1].upd;
-            this.php.get("room", { uid: this.data.user.id, rid: this.room.id, csd: this.room.csd });
-          }
-          console.log("readed=" + this.chats[i - 1].upd.toDate());
-          break;
-        }
-      }
+      this.php.get("room", { uid: this.data.user.id, rid: this.room.id, csd: this.data.dateFormat(csd) }).subscribe(dummy => { });
     }
   }
   ngOnDestroy() {
@@ -91,4 +94,5 @@ export class RoomComponent implements OnInit {
       this.chatSb.unsubscribe;
     }
   }
+
 }
