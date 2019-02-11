@@ -25,10 +25,13 @@
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
+<div><span class="unread" *ngIf="mentionTop">メンション↑{{mentionTop}}件</span></div>
 <ion-content [scrollEvents]="true" (ionScroll)="onScroll($event)" (ionScrollEnd)="onScrollEnd($event)">
   <router-outlet></router-outlet>
 </ion-content>
-<ion-footer>
+<div><span class="unread" *ngIf="readedFlag">未読メッセージ↓</span>
+  <span class="unread" *ngIf="mentionButtom">メンション↓{{mentionButtom}}件</span></div>
+<ion-footer id="footer">
   <ion-toolbar no-padding>
     <ion-item *ngIf="!user.id" button="true" (click)="login()">
       ログインしてコミュニケーションを楽しもう

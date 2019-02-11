@@ -1,23 +1,24 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { IonContent } from '@ionic/angular';
+import { Component, OnInit, ViewChildren } from '@angular/core';
+import { IonContent, IonList, IonItem, IonAvatar } from '@ionic/angular';
 import { ActivatedRoute } from '@angular/router';
 import { Room, DataService } from '../provider/data.service';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { Observable, Subscription } from 'rxjs';
 import { PhpService } from '../provider/php.service';
+import { Content } from '@angular/compiler/src/render3/r3_ast';
 @Component({
   selector: 'app-room',
   templateUrl: './room.component.html',
   styleUrls: ['./room.component.scss']
 })
 export class RoomComponent implements OnInit {
-  @ViewChild(IonContent) content: IonContent;
+  @ViewChildren(IonAvatar) content;
   room: Room;
   chats = [];
   cursor: Date = new Date();
   chatSb: Subscription;
-  csd: Date;
   readedFlag: boolean;
+  unread: Date;
   constructor(private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
     , private php: PhpService) { }
   ngOnInit() {
@@ -41,11 +42,11 @@ export class RoomComponent implements OnInit {
     this.chatInit();
   }
   chatInit() {
+    this.data.readedFlag = this.room.csd ? true : false;
     this.data.joinRoom(this.room);
     this.cursor = new Date();
     this.csdWrite(new Date());
     this.data.currentY = 0;
-    this.readedFlag = true;
     this.chatLoad(false);
     if (!this.chatSb) {
       this.chatSb = this.db.collection('room').doc(this.room.id.toString()).collection('chat', ref =>
@@ -65,12 +66,12 @@ export class RoomComponent implements OnInit {
         let docs = [];
         query.forEach(doc => {
           var d = doc.data();
-          if (this.room.csd && this.readedFlag) {
+          if (this.data.readedFlag) {
             let upd = d.upd.toDate();
             let csd = new Date(this.room.csd);
             if (upd <= csd) {
               d.readed = true;
-              this.readedFlag = false;
+              this.data.readedFlagChange(false);
             }
           }
           docs.push(d);
@@ -81,6 +82,7 @@ export class RoomComponent implements OnInit {
           if (e) e.target.complete();
         } else {
           if (e) e.target.disabled = true;
+          this.data.readedFlagChange(false);
         }
       });
   }
@@ -88,6 +90,10 @@ export class RoomComponent implements OnInit {
     if (this.data.user.id) {
       this.php.get("room", { uid: this.data.user.id, rid: this.room.id, csd: this.data.dateFormat(csd) }).subscribe(dummy => { });
     }
+  }
+  getContent() {
+    let a = this.content;
+    return this.content;
   }
   ngOnDestroy() {
     if (this.chatSb) {

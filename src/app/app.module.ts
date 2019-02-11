@@ -19,8 +19,9 @@ import { DataService } from './provider/data.service';
 import { RoomComponent } from './room/room.component';
 import { MainComponent } from './main/main.component';
 import { MemberComponent } from './member/member.component';
+import { SafePipe } from './pipe/safe.pipe';
 @NgModule({
-  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent],
+  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe],
   entryComponents: [MemberComponent],
   imports: [
     BrowserModule,

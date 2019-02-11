@@ -19,6 +19,12 @@ export class DataService {
   mentionSubject = new Subject();
   mentionState = this.mentionSubject.asObservable();
   currentY: number;
+  readedFlag: boolean;
+  readedFlagSubject = new Subject<boolean>();
+  readedFlagState = this.readedFlagSubject.asObservable();
+  mentionRooms: Array<any> = [];
+  mentionRoomsSubject = new Subject<Array<any>>();
+  mentionRoomsState = this.mentionRoomsSubject.asObservable();
   constructor(private php: PhpService, ) { }
   login(user) {
     if (this.user.id !== user.uid) {
@@ -60,6 +66,14 @@ export class DataService {
   }
   mention(member) {
     this.mentionSubject.next(member);
+  }
+  readedFlagChange(value: boolean) {
+    this.readedFlag = value;
+    this.readedFlagSubject.next(value);
+  }
+  mentionRoom(rooms: Array<any>) {
+    this.mentionRooms = rooms;
+    this.mentionRoomsSubject.next(this.mentionRooms);
   }
   dateFormat(date = new Date()) {//MySQL用日付文字列作成'yyyy-M-d H:m:s'
     var y = date.getFullYear();

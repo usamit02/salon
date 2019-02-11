@@ -20,6 +20,11 @@ export class MainComponent {
   bookmk: boolean = false;
   writer: string;
   message: string;
+  readedFlag: boolean;
+  mentionRoomSb;
+  mentions;
+  mentionTop: number;
+  mentionButtom: number;
   tinyinit = {
     selector: "#tiny",
     menubar: false,
@@ -51,10 +56,56 @@ export class MainComponent {
   ngOnInit() {
     this.user = new User;
     this.room = new Room;
-    this.data.userState.subscribe(user => { this.user = user; });
+    this.data.userState.subscribe(user => {
+      this.user = user;
+      if (user.id) {
+        /*
+         this.db.collection('user').doc(this.user.id.toString()).collection('mention', ref => ref.orderBy('upd', 'desc')).get().subscribe(query => {
+           let mentions = [];
+           query.forEach(mention => {
+             let data: any = {};
+             data = mention.data();
+             data.id = mention.id;
+             mentions.push(data);
+           });
+           this.loadMentionRooms(mentions);
+         });*/
+        if (this.mentionRoomSb) this.mentionRoomSb.unsubscribe();
+        this.mentionRoomSb = this.db.collection('user').doc(this.user.id.toString()).collection('mention', ref => ref.orderBy('upd', 'desc')).
+          snapshotChanges().subscribe((res: Array<any>) => {
+            let data: any = {};
+            let mentions = [];
+            for (let i = 0; i < res.length; i++) {
+              data = res[i].payload.doc.data();
+              data.id = res[i].payload.doc.id;
+              mentions.push(data);
+            }
+            this.loadMentionRooms(mentions);
+          });
+      }
+    });
     this.data.roomState.subscribe(room => {
       this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: this.user, rtc: "" })
       this.room = room;
+      this.readedFlag = this.data.readedFlag;
+      if (this.user.id) {
+        setTimeout(() => {
+          var chats = <any>document.getElementsByClassName('chat');
+          var footer = <any>document.getElementById('footer');
+          if (chats.length) {
+            if (chats[chats.length - 1].offsetTop + chats[chats.length - 1].offsetHeight > footer.offsetTop) {
+              this.content.scrollByPoint(0, 1, 0);
+              this.content.scrollByPoint(0, 0, 0);
+            } else {
+              var upd = [];
+              for (let i = 0; i < chats.length; i++) {
+                upd.push(new Date(chats[i].children[0].innerHTML))
+              }
+              this.deleteMention(upd);
+            }
+          }
+        }, 3000);
+      }
     });
     this.data.mentionState.subscribe((member: any) => {
       var ed = tinymce.activeEditor;
@@ -65,6 +116,7 @@ export class MainComponent {
       var newNode = ed.dom.select('#' + endId);
       ed.selection.select(newNode[0]);
     });
+    this.data.readedFlagState.subscribe(readedFlag => { this.readedFlag = readedFlag; });
     tinymce.init(this.tinyinit);
   }
   ngAfterViewInit() {
@@ -142,27 +194,61 @@ export class MainComponent {
       });
     }
   }
-  loadMentions() {
-
-  }
   onScroll(e) {
     this.data.currentY = e.detail.currentY;
   }
   onScrollEnd(e) {
     if (this.data.user.id) {
-      let chats = e.currentTarget.children[1].children[0].children;
-      for (let i = 1; i < chats.length; i++) {
-        if (chats[i].offsetTop > this.data.currentY + e.currentTarget.scrollHeight - 30) {
-          let upd = new Date(chats[i - 1].children[2].innerHTML);
-          if (new Date(this.room.csd) < upd) {
-            this.room.csd = upd;
-            this.php.get("room", { uid: this.data.user.id, rid: this.room.id, csd: this.data.dateFormat(this.room.csd) }).subscribe(dummy => { });
-          }
-          console.log("readed=" + upd);
-          break;
+      this.readedFlag = this.data.readedFlag;
+      var chats = e.currentTarget.children[1].children[0].children;
+      var upd = [];//見えてるチャットの日付の集合
+      for (let i = 0; i < chats.length; i++) {
+        if (chats[i].offsetTop >= this.data.currentY &&
+          chats[i].offsetTop + chats[i].offsetHeight < this.data.currentY + e.currentTarget.scrollHeight) {
+          upd.push(new Date(chats[i].children[0].innerHTML));
         }
       }
+      this.deleteMention(upd);
+      /*if (new Date(this.room.csd) < upd) {
+        this.room.csd = upd;
+        this.php.get("room", { uid: this.data.user.id, rid: this.room.id, csd: this.data.dateFormat(this.room.csd) }).subscribe(dummy => { });
+      }
+      break;*/
     }
+  }
+  deleteMention(upd) {
+    var mentions = this.mentions[this.room.id].filter(mention => {
+      let mentionUpd = new Date(mention.upd.toDate());
+      return mentionUpd <= upd[0] && mentionUpd >= upd[upd.length - 1];
+    });
+    for (let i = 0; i < mentions.length; i++) {
+      this.db.collection('user').doc(this.user.id.toString()).collection('mention').doc(mentions[i].id).delete();
+      this.mentions[this.room.id] = this.mentions[this.room.id].filter(mention => mention.id !== mentions[i].id);
+    }
+    mentions = this.mentions[this.room.id].filter(mention => new Date(mention.upd.toDate()) > upd[0]);
+    this.mentionTop = mentions.length;
+    mentions = this.mentions[this.room.id].filter(mention => new Date(mention.upd.toDate()) < upd[upd.length - 1]);
+    this.mentionButtom = mentions.length;
+  }
+  loadMentionRooms(mentions) {
+    this.mentions = {};
+    var mentionCounts = {};
+    for (let i = 0; i < mentions.length; i++) {
+      let rid = mentions[i].rid;
+      mentionCounts[rid] = mentionCounts[rid] ? mentionCounts[rid] + 1 : 1;
+      this.mentions[rid] = true;
+    }
+    Object.keys(this.mentions).forEach((key) => {
+      this.mentions[key] = mentions.filter(mention => mention.rid === Number(key));
+    });
+    var mentionRooms = [];
+    Object.keys(mentionCounts).forEach((key) => {
+      let rooms = this.data.rooms.filter(room => room.id === Number(key));
+      if (rooms.length) {
+        mentionRooms.push({ id: rooms[0].id, na: rooms[0].na, count: mentionCounts[key] });
+      }
+    });
+    this.data.mentionRoom(mentionRooms);
   }
   ngOnDestroy() {
     this.data.userSubject.unsubscribe();

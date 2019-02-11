@@ -10,12 +10,14 @@ import { MemberComponent } from './member/member.component';
 const FOLDER = { id: 1, na: "ブロガーズギルド", discription: "", idx: 0, chat: false, story: false, plan: 0, parent: 1, folder: true, bookmark: false, csd: null };
 @Component({
   selector: 'app-root',
-  templateUrl: 'app.component.html'
+  templateUrl: 'app.component.html',
+  styleUrls: ['app.component.scss']
 })
 export class AppComponent {
   room: Room;
   rooms: Array<Room> = [];
   allRooms: Array<Room> = [];
+  mentionRooms: Array<Room> = [];
   folder: Room = FOLDER;
   bookmk: boolean = false;
   onMembers = [];
@@ -49,6 +51,9 @@ export class AppComponent {
           if (f) this.offMembers.push(members[i]);
         }
       });
+    });
+    this.data.mentionRoomsState.subscribe((rooms: any) => {
+      this.mentionRooms = rooms;
     });
     this.socket.connect();
     this.socket.on("join", users => {

@@ -1,13 +1,15 @@
 <!-- <story *ngIf="room.story" [room]="room" [user]="user"></story>
   <p>room works!{{room.id}}</p>-->
 <ion-list>
-  <ion-item *ngFor="let chat of chats" [class.readed]="chat.readed">
+  <ion-item class="chat" *ngFor="let chat of chats" [class.readed]="chat.readed">
+    <span style="display:none;">{{chat.upd.toDate() | date:'MMM d, y, H:mm:ss:SSS'}}</span>
     <ion-avatar item-start>
       <ion-img [src]="chat.avatar"></ion-img>
     </ion-avatar>
-    <span class="chatna">{{chat.na}}</span>
-    <span class="chatdate">{{chat.upd.toDate() | date:'short'}}</span>
-    <p text-wrap>{{chat.txt}}</p>
+    <div><span class="chatna">{{chat.na}}</span>
+      <span class="chatdate">{{chat.upd.toDate() | date:'short'}}</span>
+      <div [innerHtml]="chat.txt | safe: 'html'"></div>
+    </div>
   </ion-item>
   <div *ngIf="!chats || chats.length===0"><span style="color:lightgrey">一番乗りだ！</span></div>
 </ion-list>
