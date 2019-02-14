@@ -1,7 +1,11 @@
 <!-- <story *ngIf="room.story" [room]="room" [user]="user"></story>
   <p>room works!{{room.id}}</p>-->
+<ion-infinite-scroll position="top" threshold="10px" (ionInfinite)="chatLoad($event)">
+  <ion-infinite-scroll-content loadingSpinner="bubbles">
+  </ion-infinite-scroll-content>
+</ion-infinite-scroll>
 <ion-list>
-  <ion-item class="chat" *ngFor="let chat of chats" [class.readed]="chat.readed">
+  <ion-item class="chat" *ngFor="let chat of chats.reverse()" [class.readed]="chat.readed">
     <span style="display:none;">{{chat.upd.toDate() | date:'MMM d, y, H:mm:ss:SSS'}}</span>
     <ion-avatar item-start>
       <ion-img [src]="chat.avatar"></ion-img>
@@ -13,7 +17,3 @@
   </ion-item>
   <div *ngIf="!chats || chats.length===0"><span style="color:lightgrey">一番乗りだ！</span></div>
 </ion-list>
-<ion-infinite-scroll position="bottom" threshold="10%" (ionInfinite)="chatLoad($event)">
-  <ion-infinite-scroll-content loadingSpinner="bubbles">
-  </ion-infinite-scroll-content>
-</ion-infinite-scroll>

@@ -172,15 +172,15 @@ export class MainComponent {
     let txt = ed.getContent({ format: 'html' });
     if (!txt) return;
     var upd = new Date();
+    this.db.collection('room').doc(this.room.id.toString()).collection('chat').add({
+      uid: this.user.id, na: this.user.na, avatar: this.user.avatar, txt: txt, upd: upd
+    });
     var mentions = ed.dom.select('.mention');
     for (let i = 0; i < mentions.length; i++) {
       this.db.collection('user').doc(mentions[i].id).collection('mention').add({
         uid: this.user.id, rid: this.room.id, upd: upd
       });
     }
-    this.db.collection('room').doc(this.room.id.toString()).collection('chat').add({
-      uid: this.user.id, na: this.user.na, avatar: this.user.avatar, txt: txt, upd: upd
-    });
     setTimeout(() => {
       ed.setContent('');
     });
@@ -217,38 +217,47 @@ export class MainComponent {
     }
   }
   deleteMention(upd) {
-    var mentions = this.mentions[this.room.id].filter(mention => {
-      let mentionUpd = new Date(mention.upd.toDate());
-      return mentionUpd <= upd[0] && mentionUpd >= upd[upd.length - 1];
-    });
-    for (let i = 0; i < mentions.length; i++) {
-      this.db.collection('user').doc(this.user.id.toString()).collection('mention').doc(mentions[i].id).delete();
-      this.mentions[this.room.id] = this.mentions[this.room.id].filter(mention => mention.id !== mentions[i].id);
+    var mentions = this.mentions[this.room.id.toString()];
+    if (mentions && mentions.length) {
+      var deleteMentions = mentions.filter(mention => {
+        let mentionUpd = new Date(mention.upd.toDate());
+        return mentionUpd <= upd[0] && mentionUpd >= upd[upd.length - 1];
+      });
+      for (let i = 0; i < deleteMentions.length; i++) {
+        this.db.collection('user').doc(this.user.id.toString()).collection('mention').doc(deleteMentions[i].id).delete();
+        mentions = mentions.filter(mention => mention.id !== deleteMentions[i].id);
+      }
+      var mentionTop = this.mentions[this.room.id].filter(mention => new Date(mention.upd.toDate()) > upd[0]);
+      this.mentionTop = mentionTop.length;
+      var mentionButtom = this.mentions[this.room.id].filter(mention => new Date(mention.upd.toDate()) < upd[upd.length - 1]);
+      this.mentionButtom = mentionButtom.length;
     }
-    mentions = this.mentions[this.room.id].filter(mention => new Date(mention.upd.toDate()) > upd[0]);
-    this.mentionTop = mentions.length;
-    mentions = this.mentions[this.room.id].filter(mention => new Date(mention.upd.toDate()) < upd[upd.length - 1]);
-    this.mentionButtom = mentions.length;
   }
   loadMentionRooms(mentions) {
     this.mentions = {};
     var mentionCounts = {};
-    for (let i = 0; i < mentions.length; i++) {
-      let rid = mentions[i].rid;
-      mentionCounts[rid] = mentionCounts[rid] ? mentionCounts[rid] + 1 : 1;
-      this.mentions[rid] = true;
-    }
-    Object.keys(this.mentions).forEach((key) => {
-      this.mentions[key] = mentions.filter(mention => mention.rid === Number(key));
-    });
-    var mentionRooms = [];
-    Object.keys(mentionCounts).forEach((key) => {
-      let rooms = this.data.rooms.filter(room => room.id === Number(key));
-      if (rooms.length) {
-        mentionRooms.push({ id: rooms[0].id, na: rooms[0].na, count: mentionCounts[key] });
+    var chats = <any>document.getElementsByClassName('chat');
+    var upd = new Date(chats[0].children[0].innerHTML).getTime();
+    if (this.data.currentY === 0 && mentions[0].rid === this.room.id && mentions[0].upd.toDate().getTime() === upd) {
+      this.db.collection('user').doc(this.user.id.toString()).collection('mention').doc(mentions[0].id).delete();
+    } else {
+      for (let i = 0; i < mentions.length; i++) {
+        let rid = mentions[i].rid;
+        mentionCounts[rid] = mentionCounts[rid] ? mentionCounts[rid] + 1 : 1;
+        this.mentions[rid] = true;
       }
-    });
-    this.data.mentionRoom(mentionRooms);
+      Object.keys(this.mentions).forEach((key) => {
+        this.mentions[key] = mentions.filter(mention => mention.rid === Number(key));
+      });
+      var mentionRooms = [];
+      Object.keys(mentionCounts).forEach((key) => {
+        let rooms = this.data.rooms.filter(room => room.id === Number(key));
+        if (rooms.length) {
+          mentionRooms.push({ id: rooms[0].id, na: rooms[0].na, count: mentionCounts[key] });
+        }
+      });
+      this.data.mentionRoom(mentionRooms);
+    }
   }
   ngOnDestroy() {
     this.data.userSubject.unsubscribe();

@@ -1,18 +1,17 @@
-import { Component, OnInit, ViewChildren } from '@angular/core';
-import { IonContent, IonList, IonItem, IonAvatar } from '@ionic/angular';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { IonInfiniteScroll } from '@ionic/angular';
 import { ActivatedRoute } from '@angular/router';
 import { Room, DataService } from '../provider/data.service';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { Observable, Subscription } from 'rxjs';
 import { PhpService } from '../provider/php.service';
-import { Content } from '@angular/compiler/src/render3/r3_ast';
 @Component({
   selector: 'app-room',
   templateUrl: './room.component.html',
   styleUrls: ['./room.component.scss']
 })
 export class RoomComponent implements OnInit {
-  @ViewChildren(IonAvatar) content;
+  @ViewChild(IonInfiniteScroll) infiniteScroll: IonInfiniteScroll;
   room: Room;
   chats = [];
   cursor: Date = new Date();
@@ -77,8 +76,10 @@ export class RoomComponent implements OnInit {
           docs.push(d);
         });
         if (docs.length) {
-          this.cursor = docs[docs.length - 1].upd.toDate();
-          this.chats.push(...docs);
+          if (docs[0].upd.toDate().getTime() < this.cursor.getTime()) {
+            this.cursor = docs[docs.length - 1].upd.toDate();
+            this.chats.push(...docs);
+          }
           if (e) e.target.complete();
         } else {
           if (e) e.target.disabled = true;
@@ -90,10 +91,6 @@ export class RoomComponent implements OnInit {
     if (this.data.user.id) {
       this.php.get("room", { uid: this.data.user.id, rid: this.room.id, csd: this.data.dateFormat(csd) }).subscribe(dummy => { });
     }
-  }
-  getContent() {
-    let a = this.content;
-    return this.content;
   }
   ngOnDestroy() {
     if (this.chatSb) {
