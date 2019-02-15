@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { IonInfiniteScroll } from '@ionic/angular';
 import { ActivatedRoute } from '@angular/router';
-import { Room, DataService } from '../provider/data.service';
+import { Room, User, DataService } from '../provider/data.service';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { Observable, Subscription } from 'rxjs';
 import { PhpService } from '../provider/php.service';
@@ -14,8 +14,9 @@ export class RoomComponent implements OnInit {
   @ViewChild(IonInfiniteScroll) infiniteScroll: IonInfiniteScroll;
   room: Room;
   chats = [];
-  cursor: Date = new Date();
+  chatsUsers: Array<User> = [];
   chatSb: Subscription;
+  chatTop: string = "";
   readedFlag: boolean;
   unread: Date;
   constructor(private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
@@ -41,60 +42,109 @@ export class RoomComponent implements OnInit {
     this.chatInit();
   }
   chatInit() {
-    this.data.readedFlag = this.room.csd ? true : false;
     this.data.joinRoom(this.room);
-    this.cursor = new Date();
     this.csdWrite(new Date());
+    this.chats = [];
     this.data.currentY = 0;
-    this.chatLoad(false);
-    if (!this.chatSb) {
-      this.chatSb = this.db.collection('room').doc(this.room.id.toString()).collection('chat', ref =>
-        ref.where('upd', '>', this.cursor)).valueChanges().subscribe(data => {
-          if (data.length) {
-            this.chats.unshift(data[data.length - 1]);
-            if (this.data.currentY === 0) {
-              this.csdWrite(data[0].upd.toDate());
-            }
-          }
-        });
+    let infineteScroll = this.infiniteScroll;
+    this.infiniteScroll.disabled = true;
+    if (this.room.csd) {
+      this.data.readedFlag = true;
+      this.chatLoad(false, "bottom");
+    } else {
+      this.data.readedFlag = false;
+      this.chatLoad(false, "top");
     }
+    if (this.chatSb) this.chatSb.unsubscribe();
+    this.chatSb = this.db.collection('room').doc(this.room.id.toString()).collection('chat', ref =>
+      ref.where('upd', '>', new Date())).valueChanges().subscribe(data => {
+        if (data.length) {
+          this.chats.unshift(data[data.length - 1]);
+          if (this.data.currentY === 0) {
+            this.csdWrite(data[0].upd.toDate());
+          }
+        }
+      });
   }
-  chatLoad(e) {
-    this.db.collection('room').doc(this.room.id.toString()).collection('chat', ref => ref.orderBy('upd', 'desc')
-      .where('upd', '<', this.cursor).limit(20)).get().subscribe(query => {
-        let docs = [];
-        query.forEach(doc => {
-          var d = doc.data();
-          if (this.data.readedFlag) {
-            let upd = d.upd.toDate();
-            let csd = new Date(this.room.csd);
-            if (upd <= csd) {
-              d.readed = true;
-              this.data.readedFlagChange(false);
-            }
+  chatLoad(e, direction) {
+    var cursor: Date; let db; this.chatTop = "";
+    if (this.chats.length) {
+      cursor = direction === 'top' ? this.chats[this.chats.length - 1].upd.toDate() : this.chats[0].upd.toDate();
+    } else {
+      cursor = this.room.csd ? new Date(this.room.csd) : new Date();
+    }
+    if (direction === 'bottom') {
+      db = this.db.collection('room').doc(this.room.id.toString()).collection('chat', ref => ref.
+        where('upd', ">", cursor).orderBy('upd', 'asc').limit(20));
+    } else {
+      db = this.db.collection('room').doc(this.room.id.toString()).collection('chat', ref => ref.
+        where('upd', "<", cursor).orderBy('upd', 'desc').limit(20));
+    }
+    this.chatsUsers.unshift(this.data.user);
+    db.get().subscribe(query => {
+      let docs = [];
+      query.forEach(doc => {
+        var d = doc.data();
+        if (this.data.readedFlag) {
+          if (d.upd.toDate().getTime() <= new Date(this.room.csd).getTime()) {
+            d.readed = true;
+            this.data.readedFlagChange(false);
           }
-          docs.push(d);
-        });
+        }
+        docs.push(d);
+      });
+      let chats = this.chats;
+      let chatsUser = this.chatsUsers.pop();
+      if (chatsUser.id === this.data.user.id) {
         if (docs.length) {
-          if (docs[0].upd.toDate().getTime() < this.cursor.getTime()) {
-            this.cursor = docs[docs.length - 1].upd.toDate();
-            this.chats.push(...docs);
+          let upd = direction === 'top' ? docs[0].upd.toDate().getTime() : docs[docs.length - 1].upd.toDate().getTime();
+          let csd = cursor.getTime();
+          if (direction === "bottom") docs = docs.reverse();
+          // if (direction === 'top' && upd < csd || direction === 'bottom' && upd > csd) {
+          if (!this.chats.length) {
+            setTimeout(() => {
+              if (direction === "top") {
+                this.data.scroll("bottom");
+              } else {
+                this.chatTop = "既読メッセージを表示↑";
+                this.data.scroll("bottomOne")
+              }
+              setTimeout(() => {
+                this.infiniteScroll.disabled = false;
+              }, 3000);
+            }, 1000);
           }
+          if (direction === 'top') {
+            this.chats.push(...docs);
+            /*if (this.chats.length > 50) {
+              this.chats = this.chats.slice(40);
+              this.infiniteScrolls.last.disabled = false;
+            }*/
+          } else {
+            this.chats.unshift(...docs);
+            /*if (this.chats.length > 50) {
+              this.chats = this.chats.slice(0, 40);
+              this.infiniteScrolls.first.disabled = false;
+            }*/
+          }
+          // }
           if (e) e.target.complete();
         } else {
           if (e) e.target.disabled = true;
           this.data.readedFlagChange(false);
+          if (!this.chats.length) this.chatTop = "一番乗りだ！";
         }
-      });
+      }
+    });
   }
   csdWrite(csd: Date) {
     if (this.data.user.id) {
-      this.php.get("room", { uid: this.data.user.id, rid: this.room.id, csd: this.data.dateFormat(csd) }).subscribe(dummy => { });
+      //this.php.get("room", { uid: this.data.user.id, rid: this.room.id, csd: this.data.dateFormat(csd) }).subscribe(dummy => { });
     }
   }
   ngOnDestroy() {
     if (this.chatSb) {
-      this.chatSb.unsubscribe;
+      this.chatSb.unsubscribe();
     }
   }
 

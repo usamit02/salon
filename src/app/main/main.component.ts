@@ -117,6 +117,13 @@ export class MainComponent {
       ed.selection.select(newNode[0]);
     });
     this.data.readedFlagState.subscribe(readedFlag => { this.readedFlag = readedFlag; });
+    this.data.scrollState.subscribe(direction => {
+      if (direction === 'bottom') {
+        this.content.scrollToBottom(500);
+      } else if (direction === 'bottomOne') {
+        this.content.scrollByPoint(0, 20, 300);
+      }
+    });
     tinymce.init(this.tinyinit);
   }
   ngAfterViewInit() {
@@ -184,6 +191,9 @@ export class MainComponent {
     setTimeout(() => {
       ed.setContent('');
     });
+    setTimeout(() => {
+      this.content.scrollToBottom();
+    }, 300);
   }
   sendMsg2() {
     var upd = new Date();
@@ -237,6 +247,7 @@ export class MainComponent {
     this.mentions = {};
     var mentionCounts = {};
     var chats = <any>document.getElementsByClassName('chat');
+    if (!chats.length) return;
     var upd = new Date(chats[0].children[0].innerHTML).getTime();
     if (this.data.currentY === 0 && mentions[0].rid === this.room.id && mentions[0].upd.toDate().getTime() === upd) {
       this.db.collection('user').doc(this.user.id.toString()).collection('mention').doc(mentions[0].id).delete();
