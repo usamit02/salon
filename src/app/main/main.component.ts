@@ -14,13 +14,12 @@ declare var tinymce;
 })
 export class MainComponent {
   @ViewChild(IonContent) content: IonContent;
-  room: Room;
   user: User;
+  room;
   userX: string;
   bookmk: boolean = false;
   writer: string;
   message: string;
-  readedFlag: boolean;
   mentionRoomSb;
   mentions;
   mentionTop: number;
@@ -55,7 +54,6 @@ export class MainComponent {
   }
   ngOnInit() {
     this.user = new User;
-    this.room = new Room;
     this.data.userState.subscribe(user => {
       this.user = user;
       if (user.id) {
@@ -85,9 +83,7 @@ export class MainComponent {
       }
     });
     this.data.roomState.subscribe(room => {
-      this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: this.user, rtc: "" })
-      this.room = room;
-      this.readedFlag = this.data.readedFlag;
+      this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.data.room.id, user: this.user, rtc: "" });
       if (this.user.id) {
         setTimeout(() => {
           var chats = <any>document.getElementsByClassName('chat');
@@ -97,11 +93,11 @@ export class MainComponent {
               this.content.scrollByPoint(0, 1, 0);
               this.content.scrollByPoint(0, 0, 0);
             } else {
-              var upd = [];
+              var upds = [];
               for (let i = 0; i < chats.length; i++) {
-                upd.push(new Date(chats[i].children[0].innerHTML))
+                upds.push(new Date(chats[i].children[0].innerHTML))
               }
-              this.deleteMention(upd);
+              this.deleteMention(upds);
             }
           }
         }, 3000);
@@ -116,12 +112,13 @@ export class MainComponent {
       var newNode = ed.dom.select('#' + endId);
       ed.selection.select(newNode[0]);
     });
-    this.data.readedFlagState.subscribe(readedFlag => { this.readedFlag = readedFlag; });
     this.data.scrollState.subscribe(direction => {
-      if (direction === 'bottom') {
+      if (direction === 'btm') {
         this.content.scrollToBottom(500);
-      } else if (direction === 'bottomOne') {
+      } else if (direction === 'btmOne') {
         this.content.scrollByPoint(0, 20, 300);
+      } else if (typeof direction === "number") {
+        this.content.scrollToPoint(0, direction, 300);
       }
     });
     tinymce.init(this.tinyinit);
@@ -179,13 +176,13 @@ export class MainComponent {
     let txt = ed.getContent({ format: 'html' });
     if (!txt) return;
     var upd = new Date();
-    this.db.collection('room').doc(this.room.id.toString()).collection('chat').add({
+    this.db.collection('room').doc(this.data.room.id.toString()).collection('chat').add({
       uid: this.user.id, na: this.user.na, avatar: this.user.avatar, txt: txt, upd: upd
     });
     var mentions = ed.dom.select('.mention');
     for (let i = 0; i < mentions.length; i++) {
       this.db.collection('user').doc(mentions[i].id).collection('mention').add({
-        uid: this.user.id, rid: this.room.id, upd: upd
+        uid: this.user.id, rid: this.data.room.id, upd: upd
       });
     }
     setTimeout(() => {
@@ -199,7 +196,7 @@ export class MainComponent {
     var upd = new Date();
     for (let i = 0; i < 100; i++) {
       upd.setDate(upd.getDate() - 1);
-      this.db.collection('room').doc(this.room.id.toString()).collection('chat').add({
+      this.db.collection('room').doc(this.data.room.id.toString()).collection('chat').add({
         uid: this.user.id, na: this.user.na, avatar: this.user.avatar, txt: i.toString(), upd: upd
       });
     }
@@ -209,25 +206,31 @@ export class MainComponent {
   }
   onScrollEnd(e) {
     if (this.data.user.id) {
-      this.readedFlag = this.data.readedFlag;
-      var chats = e.currentTarget.children[1].children[0].children;
-      var upd = [];//見えてるチャットの日付の集合
+      var chats = e.currentTarget.children[1].children[2].children;
+      var upds = [];//見えてるチャットの日付の集合
       for (let i = 0; i < chats.length; i++) {
         if (chats[i].offsetTop >= this.data.currentY &&
-          chats[i].offsetTop + chats[i].offsetHeight < this.data.currentY + e.currentTarget.scrollHeight) {
-          upd.push(new Date(chats[i].children[0].innerHTML));
+          chats[i].offsetTop + chats[i].offsetHeight < this.data.currentY + e.currentTarget.scrollHeight - 30) {
+          upds.push(new Date(chats[i].children[0].innerHTML));
         }
       }
-      this.deleteMention(upd);
-      /*if (new Date(this.room.csd) < upd) {
-        this.room.csd = upd;
-        this.php.get("room", { uid: this.data.user.id, rid: this.room.id, csd: this.data.dateFormat(this.room.csd) }).subscribe(dummy => { });
+      if (upds.length) {
+        this.deleteMention(upds);
+        let upd = upds[upds.length - 1];
+        if (!this.data.room.csd || new Date(this.data.room.csd).getTime() < upd.getTime()) {
+          this.data.room.csd = upd;
+          this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(upd) }).subscribe(dummy => { });
+        }
       }
-      break;*/
     }
+    console.log(this.data.currentY);
+  }
+  onActivate(e) {
+    console.log("activate" + e);
+    this.room = e;
   }
   deleteMention(upd) {
-    var mentions = this.mentions[this.room.id.toString()];
+    var mentions = this.mentions[this.data.room.id.toString()];
     if (mentions && mentions.length) {
       var deleteMentions = mentions.filter(mention => {
         let mentionUpd = new Date(mention.upd.toDate());
@@ -237,9 +240,9 @@ export class MainComponent {
         this.db.collection('user').doc(this.user.id.toString()).collection('mention').doc(deleteMentions[i].id).delete();
         mentions = mentions.filter(mention => mention.id !== deleteMentions[i].id);
       }
-      var mentionTop = this.mentions[this.room.id].filter(mention => new Date(mention.upd.toDate()) > upd[0]);
+      var mentionTop = this.mentions[this.data.room.id].filter(mention => new Date(mention.upd.toDate()) > upd[0]);
       this.mentionTop = mentionTop.length;
-      var mentionButtom = this.mentions[this.room.id].filter(mention => new Date(mention.upd.toDate()) < upd[upd.length - 1]);
+      var mentionButtom = this.mentions[this.data.room.id].filter(mention => new Date(mention.upd.toDate()) < upd[upd.length - 1]);
       this.mentionButtom = mentionButtom.length;
     }
   }
@@ -249,7 +252,7 @@ export class MainComponent {
     var chats = <any>document.getElementsByClassName('chat');
     if (!chats.length) return;
     var upd = new Date(chats[0].children[0].innerHTML).getTime();
-    if (this.data.currentY === 0 && mentions[0].rid === this.room.id && mentions[0].upd.toDate().getTime() === upd) {
+    if (this.data.currentY === 0 && mentions[0].rid === this.data.room.id && mentions[0].upd.toDate().getTime() === upd) {
       this.db.collection('user').doc(this.user.id.toString()).collection('mention').doc(mentions[0].id).delete();
     } else {
       for (let i = 0; i < mentions.length; i++) {

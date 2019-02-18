@@ -5,7 +5,7 @@
       <ion-menu-button menu="start"></ion-menu-button>
     </ion-buttons>
     <ion-item>
-      <ion-title>{{room.na}}</ion-title>
+      <ion-title>{{data.room.na}}</ion-title>
       <ion-button (click)="rtc('headset')" item-right>
         <ion-icon name="headset"></ion-icon>
         視聴
@@ -25,12 +25,12 @@
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
-<div><span class="unread" *ngIf="readedFlag">未読メッセージ↑</span>
-  <span class="unread" *ngIf="mentionTop">メンション↑{{mentionTop}}件</span></div>
-<ion-content [scrollEvents]="true" (ionScroll)="onScroll($event)" (ionScrollEnd)="onScrollEnd($event)">
-  <router-outlet></router-outlet>
+<div><span *ngIf="mentionTop">メンション↑{{mentionTop}}件</span></div>
+<ion-content id="chatscontent" [scrollEvents]="true" (ionScroll)="onScroll($event)" (ionScrollEnd)="onScrollEnd($event)">
+  <router-outlet (activate)="onActivate($event)"></router-outlet>
 </ion-content>
-<div><span class="unread" *ngIf="mentionButtom">メンション↓{{mentionButtom}}件</span></div>
+<div><span *ngIf="mentionButtom">メンション↓{{mentionButtom}}件</span><span *ngIf="data.newChat">新着メッセージ↓</span>
+</div>
 <ion-footer id="footer">
   <ion-toolbar no-padding>
     <ion-item *ngIf="!user.id" button="true" (click)="login()">

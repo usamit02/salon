@@ -19,9 +19,7 @@ export class DataService {
   mentionSubject = new Subject();
   mentionState = this.mentionSubject.asObservable();
   currentY: number;
-  readedFlag: boolean;
-  readedFlagSubject = new Subject<boolean>();
-  readedFlagState = this.readedFlagSubject.asObservable();
+  newChatdoc: number;
   mentionRooms: Array<any> = [];
   mentionRoomsSubject = new Subject<Array<any>>();
   mentionRoomsState = this.mentionRoomsSubject.asObservable();
@@ -66,10 +64,6 @@ export class DataService {
   }
   mention(member) {
     this.mentionSubject.next(member);
-  }
-  readedFlagChange(value: boolean) {
-    this.readedFlag = value;
-    this.readedFlagSubject.next(value);
   }
   mentionRoom(rooms: Array<any>) {
     this.mentionRooms = rooms;
