@@ -14,12 +14,10 @@ export class DataService {
   room = new Room();
   roomSubject = new Subject<Room>();
   roomState = this.roomSubject.asObservable();
-  scrollSubject = new Subject();
-  scrollState = this.scrollSubject.asObservable();
   mentionSubject = new Subject();
   mentionState = this.mentionSubject.asObservable();
-  currentY: number;
   newChatdoc: number;
+  mentions = {};
   mentionRooms: Array<any> = [];
   mentionRoomsSubject = new Subject<Array<any>>();
   mentionRoomsState = this.mentionRoomsSubject.asObservable();
@@ -59,14 +57,26 @@ export class DataService {
     this.roomSubject.next(room);
     console.log('joinRoom:' + room.na);
   }
-  scroll(direction) {
-    this.scrollSubject.next(direction);
-  }
   mention(member) {
     this.mentionSubject.next(member);
   }
-  mentionRoom(rooms: Array<any>) {
-    this.mentionRooms = rooms;
+  mentionRoom(mentions) {
+    let mentionCounts = {}; this.mentions = {};
+    for (let i = 0; i < mentions.length; i++) {
+      let rid = mentions[i].rid;
+      mentionCounts[rid] = mentionCounts[rid] ? mentionCounts[rid] + 1 : 1;
+      this.mentions[rid] = true;
+    }
+    Object.keys(this.mentions).forEach((key) => {
+      this.mentions[key] = mentions.filter(mention => mention.rid === Number(key));
+    });
+    this.mentionRooms = [];
+    Object.keys(mentionCounts).forEach((key) => {
+      let rooms = this.rooms.filter(room => room.id === Number(key));
+      if (rooms.length) {
+        this.mentionRooms.push({ id: rooms[0].id, na: rooms[0].na, count: mentionCounts[key] });
+      }
+    });
     this.mentionRoomsSubject.next(this.mentionRooms);
   }
   dateFormat(date = new Date()) {//MySQL用日付文字列作成'yyyy-M-d H:m:s'

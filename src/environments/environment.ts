@@ -14,8 +14,8 @@ export const firebaseConfig = {
   storageBucket: 'blogersguild1.appspot.com',
   messagingSenderId: '1091781872346'
 };
-export const socketConfig: SocketIoConfig = { url: 'http://localhost:3002', options: {} };
-//export const socketConfig: SocketIoConfig = { url: 'https://www.clife.cf:3002', options: {} };
+//export const socketConfig: SocketIoConfig = { url: 'http://localhost:3002', options: {} };
+export const socketConfig: SocketIoConfig = { url: 'https://www.clife.cf:3002', options: {} };
 /*
  * For easier debugging in development mode, you can import the following file
  * to ignore zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.

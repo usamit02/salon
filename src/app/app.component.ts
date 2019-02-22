@@ -17,7 +17,6 @@ export class AppComponent {
   room: Room;
   rooms: Array<Room> = [];
   allRooms: Array<Room> = [];
-  mentionRooms: Array<Room> = [];
   folder: Room = FOLDER;
   bookmk: boolean = false;
   onMembers = [];
@@ -41,6 +40,7 @@ export class AppComponent {
     });
     this.data.roomState.subscribe((room: Room) => {
       this.room = room;
+      this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: this.data.user, rtc: "" });
       this.php.get('member', { room: room.id }).subscribe((members: any) => {
         this.offMembers = [];
         for (let i = 0; i < members.length; i++) {
@@ -51,9 +51,6 @@ export class AppComponent {
           if (f) this.offMembers.push(members[i]);
         }
       });
-    });
-    this.data.mentionRoomsState.subscribe((rooms: any) => {
-      this.mentionRooms = rooms;
     });
     this.socket.connect();
     this.socket.on("join", users => {

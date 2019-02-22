@@ -25,21 +25,18 @@
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
-<div><span *ngIf="mentionTop">メンション↑{{mentionTop}}件</span></div>
-<ion-content id="chatscontent" [scrollEvents]="true" (ionScroll)="onScroll($event)" (ionScrollEnd)="onScrollEnd($event)">
-  <router-outlet (activate)="onActivate($event)"></router-outlet>
+<ion-content>
+  <router-outlet></router-outlet>
 </ion-content>
-<div><span *ngIf="mentionButtom">メンション↓{{mentionButtom}}件</span><span *ngIf="data.newChat">新着メッセージ↓</span>
-</div>
 <ion-footer id="footer">
   <ion-toolbar no-padding>
-    <ion-item *ngIf="!user.id" button="true" (click)="login()">
+    <ion-item *ngIf="!data.user.id" button="true" (click)="login()">
       ログインしてコミュニケーションを楽しもう
       <ion-icon name="logo-twitter"></ion-icon>
       <ion-icon name="logo-facebook"></ion-icon>
       <ion-icon name="logo-google"></ion-icon>
     </ion-item>
-    <div [class.none]="!user.id">
+    <div [class.none]="!data.user.id">
       <ion-item no-padding>
         <div id="tiny"></div>
         <ion-button clear icon-only item-right (click)="sendMsg()">
