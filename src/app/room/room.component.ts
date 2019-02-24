@@ -16,41 +16,19 @@ export class RoomComponent implements OnInit {
   @ViewChild('top') top: IonInfiniteScroll; @ViewChild('btm') btm: IonInfiniteScroll;
   chats = [];
   chatsUsers: Array<User> = [];
-  topMsg: string = "";
-  btmMsg: string = "";
+  dbcon;
+  topMsg: string = ""; btmMsg: string = "";
   readed: boolean;
-  newChatDoc: number = 0;
-  mentionTop: number = 0;
-  mentionBtm: number = 0;
+  newMsg: number = 0;
+  newChat: number = 0;
+  loadUpd: Date;
+  newUpds = [];
+  mentionTop: number = 0; mentionBtm: number = 0;
   currentY: number = 0;
-  mentionRoomSb: Subscription;
-  chatSb: Subscription;
-  paramsSb: Subscription;
-  roomSb: Subscription;
-  userSb: Subscription;
+  mentionRoomsSb: Subscription; mentionDbSb: Subscription; chatSb: Subscription; paramsSb: Subscription; userSb: Subscription;
   constructor(private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
     , private php: PhpService) { }
   ngOnInit() {
-    this.roomSb = this.data.roomState.subscribe(room => {
-      if (this.data.user.id) {
-        setTimeout(() => {
-          let content = <any>document.getElementById('chatscontent');
-          let chats = content.children[2].children;
-          var footer = <any>document.getElementById('footer');
-          if (chats.length) {
-            if (chats[chats.length - 1].offsetTop + chats[chats.length - 1].offsetHeight > footer.offsetTop) {
-              this.onScrollEnd({ currentTarget: content });
-            } else {
-              var upds = [];
-              for (let i = 0; i < chats.length; i++) {
-                upds.push(new Date(chats[i].children[0].innerHTML))
-              }
-              this.deleteMention(upds);
-            }
-          }
-        }, 3000);
-      }
-    });
     this.paramsSb = this.route.params.subscribe(params => {
       if (params.id === undefined) {
         this.data.room = new Room;
@@ -65,22 +43,11 @@ export class RoomComponent implements OnInit {
         });
       }
     });
-
     this.userSb = this.data.userState.subscribe(user => {
+      if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
       if (user.id) {
-        /*
-         this.db.collection('user').doc(this.user.id.toString()).collection('mention', ref => ref.orderBy('upd', 'desc')).get().subscribe(query => {
-           let mentions = [];
-           query.forEach(mention => {
-             let data: any = {};
-             data = mention.data();
-             data.id = mention.id;
-             mentions.push(data);
-           });
-           this.loadMentionRooms(mentions);
-         });*/
-        this.mentionRoomSb = this.db.collection('user').doc(this.data.user.id.toString()).collection('mention', ref => ref.orderBy('upd', 'desc')).
-          snapshotChanges().subscribe((res: Array<any>) => {
+        this.mentionDbSb = this.db.collection('user').doc(this.data.user.id.toString()).collection('mention',
+          ref => ref.orderBy('upd', 'desc')).snapshotChanges().subscribe((res: Array<any>) => {
             let data: any = {};
             let mentions = [];
             for (let i = 0; i < res.length; i++) {
@@ -92,14 +59,18 @@ export class RoomComponent implements OnInit {
           });
       }
     });
+    this.mentionRoomsSb = this.data.mentionRoomsState.subscribe(mentionRooms => {
+      this.onScrollEnd({ currentTarget: <any>document.getElementById('chatscontent') });
+    });
   }
-  deleteMention(upds) {
-    let mentions = this.data.mentions[this.data.room.id.toString()];
+  deleteNotice(upds) {
+    let upd0 = upds[0].getTime(); let upd9 = upds[upds.length - 1].getTime();
+    this.newUpds = this.newUpds.filter(upd => upd.getTime() < upd0 || upd9 < upd.getTime());//新着メッセージ
+    let mentions = this.data.mentions[this.data.room.id.toString()];//メンション
     if (mentions && mentions.length) {
-      let upd0 = upds[0].getTime(); let upd9 = upds[upds.length - 1].getTime();
       let deleteMentions = mentions.filter(mention => {
-        let mentionUpd = mention.upd.toDate().getTime();
-        return upd0 <= mentionUpd && mentionUpd <= upd9;// console.log(upd0 + "<=" + mentionUpd + "<=" + upd9);        
+        let upd = mention.upd.toDate().getTime();
+        return upd0 <= upd && upd <= upd9;// console.log(upd0 + "<=" + upd + "<=" + upd9);        
       });
       for (let i = 0; i < deleteMentions.length; i++) {
         this.db.collection('user').doc(this.data.user.id.toString()).collection('mention').doc(deleteMentions[i].id).delete();
@@ -115,16 +86,14 @@ export class RoomComponent implements OnInit {
         }
         this.data.mentionRoomsSubject.next(this.data.mentionRooms);
       }
-      let mentionTop = mentions.filter(mention => mention.upd.toDate().getTime() < upd0);
-      this.mentionTop = mentionTop.length;
-      let mentionBtm = mentions.filter(mention => mention.upd.toDate().getTime() > upd9);
-      this.mentionBtm = mentionBtm.length;
+      let mentionTops = mentions.filter(mention => mention.upd.toDate().getTime() < upd0);
+      this.mentionTop = mentionTops.length;
+      let mentionBtms = mentions.filter(mention => mention.upd.toDate().getTime() > upd9);
+      this.mentionBtm = mentionBtms.length;
+      console.log("メンション数" + this.mentionBtm);
     } else {
       this.mentionTop = 0; this.mentionBtm = 0;
     }
-  }
-  mentionTopBtm(mentions) {
-
   }
   readRooms(rooms, id) {
     let room = rooms.filter(room => { return room.id == id });
@@ -133,43 +102,56 @@ export class RoomComponent implements OnInit {
     this.chatInit();
   }
   chatInit() {
-    this.chats = []; this.currentY = 0; this.readed = false; this.top.disabled = true; this.btm.disabled = true;
+    this.chats = []; this.currentY = 0; this.readed = false; this.newUpds = [];
+    this.top.disabled = true; this.btm.disabled = true;
+    this.dbcon = this.db.collection('room').doc(this.data.room.id.toString());
     this.chatLoad(false, this.data.room.csd ? "btm" : "top");
     if (this.chatSb) this.chatSb.unsubscribe();
-    this.chatSb = this.db.collection('room').doc(this.data.room.id.toString()).collection('chat', ref =>
-      ref.where('upd', '>', new Date())).valueChanges().subscribe(data => {
-        if (data.length) {
-          this.chats.unshift(data[data.length - 1]);
-          setTimeout(() => {
-            let content = <any>document.getElementById('chatscontent');
-            let chats = content.children[2].children;
-            let currentY = this.currentY + content.scrollHeight;
-            let offsetTop = chats[chats.length - 1].offsetTop;
-            if (this.currentY + content.scrollHeight > chats[chats.length - 1].offsetTop) {
-              this.content.scrollToBottom(300);//this.data.scroll('btm');
-              this.btmMsg = "";
-              this.data.room.csd = data[0].upd.toDate();
-              this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(this.data.room.csd) }).subscribe(dummy => { });
+    this.chatSb = this.dbcon.collection('chat', ref => ref.where('upd', '>', new Date())).valueChanges().
+      subscribe(data => {        //チャットロード以降の書き込み   
+        if (!data.length) return;
+        this.dbcon.collection('chat', ref => ref.where('upd', "<", data[data.length - 1].upd).orderBy('upd', 'desc').
+          limit(1)).get().subscribe(query => {//書き込み直前のチャットを取得
+            let d;
+            query.forEach(doc => {
+              d = doc.data();
+            });//チャットが連続していれば書き込みを足す
+            if (d && d.upd.toDate().getTime() === this.chats[0].upd.toDate().getTime()) {
+              this.chats.unshift(data[data.length - 1]);
+              setTimeout(() => {
+                let content = <any>document.getElementById('chatscontent');
+                let chats = content.children[2].children;
+                if (this.currentY + content.scrollHeight > chats[chats.length - 1].offsetTop) {
+                  this.content.scrollToBottom(300);
+                  this.btmMsg = "";
+                  this.data.room.csd = data[0].upd.toDate();
+                  this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(this.data.room.csd) }).subscribe(dummy => { });
+                } else {
+                  this.newUpds.push(data[data.length - 1].upd.toDate());
+                }
+              }, 1000);
             } else {
-              //this.btmMsg = "新着メッセージを表示↓";
-              this.newChatDoc += data.length;
+              this.newUpds.push(data[data.length - 1].upd.toDate());
             }
-          }, 1000);
-        }
+          });
       });
+    setTimeout(() => {
+      this.onScrollEnd({ currentTarget: <any>document.getElementById('chatscontent') });
+    }, 3000);
   }
-  chatLoad(e, direction) {
-    var cursor: Date; let db; this.topMsg = ""; this.btmMsg = "";
-    const dbcon = this.db.collection('room').doc(this.data.room.id.toString());
-    if (this.chats.length) {
-      cursor = direction === 'top' ? this.chats[this.chats.length - 1].upd.toDate() : this.chats[0].upd.toDate();
-    } else {
-      cursor = this.data.room.csd ? new Date(this.data.room.csd) : new Date();
+  chatLoad(e, direction, cursor?: Date) {
+    let db; this.topMsg = ""; this.btmMsg = "";
+    if (!cursor) {
+      if (this.chats.length) {
+        cursor = direction === 'top' ? this.chats[this.chats.length - 1].upd.toDate() : this.chats[0].upd.toDate();
+      } else {
+        cursor = this.data.room.csd ? new Date(this.data.room.csd) : new Date();
+      }
     }
     if (direction === 'top') {
-      db = dbcon.collection('chat', ref => ref.where('upd', "<", cursor).orderBy('upd', 'desc').limit(20));
+      db = this.dbcon.collection('chat', ref => ref.where('upd', "<", cursor).orderBy('upd', 'desc').limit(20));
     } else {
-      db = dbcon.collection('chat', ref => ref.where('upd', ">", cursor).orderBy('upd', 'asc').limit(20));
+      db = this.dbcon.collection('chat', ref => ref.where('upd', ">", cursor).orderBy('upd', 'asc').limit(20));
     }
     this.chatsUsers.unshift(this.data.user);
     db.get().subscribe(query => {
@@ -178,7 +160,7 @@ export class RoomComponent implements OnInit {
       let docs1 = docsPush(query, this);
       let limit = direction === 'btm' && !this.chats.length && docs1.length < 20 ? 20 - docs1.length : 0;
       if (!limit) { limit = 1; cursor = new Date("1/1/1900"); }
-      db = dbcon.collection('chat', ref => ref.where('upd', "<=", cursor).orderBy('upd', 'desc').limit(limit));
+      db = this.dbcon.collection('chat', ref => ref.where('upd', "<=", cursor).orderBy('upd', 'desc').limit(limit));
       db.get().subscribe(query => {
         let docs2 = docsPush(query, this);
         if (direction === 'top') {
@@ -229,7 +211,7 @@ export class RoomComponent implements OnInit {
     function docsPush(query, that) {
       let docs = [];
       query.forEach(doc => {
-        var d = doc.data();
+        let d = doc.data();
         if (d.upd.toDate().getTime() <= new Date(that.data.room.csd).getTime() && !that.readed) {
           d.readed = true;
           that.readed = true;
@@ -239,22 +221,14 @@ export class RoomComponent implements OnInit {
       return docs;
     }
   }
-
   onScroll(e) {
     this.currentY = e.detail.currentY;
   }
   onScrollEnd(e) {
     if (this.data.user.id) {
-      var chats = e.currentTarget.children[2].children;
-      var upds = [];//見えてるチャットの日付の集合
-      for (let i = 0; i < chats.length; i++) {
-        if (chats[i].offsetTop >= this.currentY &&
-          chats[i].offsetTop + chats[i].offsetHeight < this.currentY + e.currentTarget.scrollHeight - 30) {
-          upds.push(new Date(chats[i].children[0].innerHTML));
-        }
-      }
+      let upds = this.currentUpds(e);
       if (upds.length) {
-        this.deleteMention(upds);
+        this.deleteNotice(upds);
         let upd = upds[upds.length - 1];
         if (!this.data.room.csd || new Date(this.data.room.csd).getTime() < upd.getTime()) {
           this.data.room.csd = upd;
@@ -263,10 +237,21 @@ export class RoomComponent implements OnInit {
       }
     }
   }
+  currentUpds(contents) {
+    var chats = contents.currentTarget.children[2].children;
+    var upds = [];//見えてるチャットの日付の集合
+    for (let i = 0; i < chats.length; i++) {
+      if (chats[i].offsetTop >= this.currentY &&
+        chats[i].offsetTop + chats[i].offsetHeight < this.currentY + contents.currentTarget.scrollHeight - 30) {
+        upds.push(new Date(chats[i].children[0].innerHTML));
+      }
+    }
+    return upds;
+  }
   btmClick() {
     if (this.btmMsg = "新着メッセージを表示↓") {
-      this.db.collection('room').doc(this.data.room.id.toString()).collection('chat', ref => ref.orderBy('upd', 'desc')
-        .limit(1)).get().subscribe(query => {
+      this.db.collection('room').doc(this.data.room.id.toString()).collection('chat',
+        ref => ref.orderBy('upd', 'desc').limit(1)).get().subscribe(query => {
           let doc = query[0].doc.data();
           let csd = doc.upd.toDate();
           let chats = <any>document.getElementsByClassName('chat');
@@ -280,10 +265,47 @@ export class RoomComponent implements OnInit {
         });
     }
   }
+  noticeClick(type) {
+    let chats = <any>document.getElementsByClassName('chat');
+    let upd = new Date(chats[chats.length - 1].children[0].innerHTML);
+    if (type === "mentionTop") {
+
+    } else if (type === "mentionBtm") {
+      let mentions = this.data.mentions[this.data.room.id.toString()];
+      let currentUpds = this.currentUpds({ currentTarget: <any>document.getElementById('chatscontent') });
+      let loadedMentions = mentions.filter(mention =>
+        mention.upd.toDate().getTime() <= upd.getTime() &&
+        mention.upd.toDate().getTime() > currentUpds[currentUpds.length - 1].getTime());
+      if (loadedMentions && loadedMentions.length) {
+        let scrollTo: number = this.currentY;
+        let mentionUpd = loadedMentions[0].upd.toDate().getTime();
+        for (let i = 0; i < chats.length; i++) {
+          if (new Date(chats[i].children[0].innerHTML).getTime() === mentionUpd) {
+            scrollTo = chats[i].offsetTop; break;
+          }
+        }
+        this.content.scrollToPoint(0, scrollTo, 300);
+      } else {
+        mentions = mentions.filter(mention => mention.upd.toDate().getTime() > upd.getTime());
+        this.chats = [];
+        this.top.disabled = true; this.btm.disabled = true;
+        this.chatLoad(false, "btm", mentions[mentions.length - 1].upd.toDate());
+      }
+    } else if (type === "newMsg") {
+      if (this.newUpds[0].getTime() <= upd.getTime()) {
+        this.content.scrollToBottom(300);
+      } else {
+        this.chats = [];
+        this.top.disabled = true; this.btm.disabled = true;
+        this.chatLoad(false, "btm", this.newUpds[0]);
+      }
+    }
+  }
   ngOnDestroy() {
-    if (this.roomSb) this.roomSb.unsubscribe();
     if (this.userSb) this.userSb.unsubscribe();
     if (this.chatSb) this.chatSb.unsubscribe();
+    if (this.mentionRoomsSb) this.mentionRoomsSb.unsubscribe();
+    //if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
     if (this.paramsSb) this.paramsSb.unsubscribe();
   }
 }
@@ -291,6 +313,17 @@ export class RoomComponent implements OnInit {
 
 
 
+        /*
+         this.db.collection('user').doc(this.user.id.toString()).collection('mention', ref => ref.orderBy('upd', 'desc')).get().subscribe(query => {
+           let mentions = [];
+           query.forEach(mention => {
+             let data: any = {};
+             data = mention.data();
+             data.id = mention.id;
+             mentions.push(data);
+           });
+           this.loadMentionRooms(mentions);
+         });*/
 
 
 
@@ -321,3 +354,23 @@ export class RoomComponent implements OnInit {
 
 
 */
+  /*  this.roomSb = this.data.roomState.subscribe(room => {
+        if (this.data.user.id) {
+          setTimeout(() => {
+            let content = <any>document.getElementById('chatscontent');
+            let chats = content.children[2].children;
+            var footer = <any>document.getElementById('footer');
+            if (chats.length) {
+              if (chats[chats.length - 1].offsetTop + chats[chats.length - 1].offsetHeight > footer.offsetTop) {
+                this.onScrollEnd({ currentTarget: content });
+              } else {
+                var upds = [];
+                for (let i = 0; i < chats.length; i++) {
+                  upds.push(new Date(chats[i].children[0].innerHTML))
+                }
+                this.deleteMention(upds);
+              }
+            }
+          }, 3000);
+        }
+      });*/

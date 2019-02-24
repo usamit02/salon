@@ -16,7 +16,6 @@ export class DataService {
   roomState = this.roomSubject.asObservable();
   mentionSubject = new Subject();
   mentionState = this.mentionSubject.asObservable();
-  newChatdoc: number;
   mentions = {};
   mentionRooms: Array<any> = [];
   mentionRoomsSubject = new Subject<Array<any>>();
