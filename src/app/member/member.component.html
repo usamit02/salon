@@ -18,5 +18,12 @@
     <ion-item button="true" (click)="dm()">
       <span>詳細を見る</span>
     </ion-item>
+    <ion-item *ngIf="data.room.plan || data.room.applyplan && data.room.auth >=200 && member.auth <= data.room.auth"
+      button="true" (click)="kick()" color="warning">
+      <span>Kick！</span>
+    </ion-item>
+    <ion-item *ngIf="data.room.auth >=200 && member.auth <= data.room.auth" button="true" color="danger" (click)="ban()">
+      <span>BAN！</span>
+    </ion-item>
   </ion-list>
 </ion-content>

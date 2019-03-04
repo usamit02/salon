@@ -5,7 +5,8 @@ import { Room, User, DataService } from '../provider/data.service';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { Subscription } from 'rxjs';
 import { PhpService } from '../provider/php.service';
-declare var $;
+import { tinyinit } from '../../environments/environment';
+declare var $; declare var tinymce;
 @Component({
   selector: 'app-room',
   templateUrl: './room.component.html',
@@ -99,7 +100,7 @@ export class RoomComponent implements OnInit {
     let room = rooms.filter(room => { return room.id == id });
     this.data.room = room.length ? room[0] : new Room;
     this.data.joinRoom(this.data.room);
-    this.chatInit();
+    if (room[0].chat) this.chatInit();
   }
   chatInit() {
     this.chats = []; this.currentY = 0; this.readed = false; this.newUpds = [];
@@ -112,11 +113,8 @@ export class RoomComponent implements OnInit {
         if (!data.length) return;
         this.dbcon.collection('chat', ref => ref.where('upd', "<", data[data.length - 1].upd).orderBy('upd', 'desc').
           limit(1)).get().subscribe(query => {//書き込み直前のチャットを取得
-            let d;
-            query.forEach(doc => {
-              d = doc.data();
-            });//チャットが連続していれば書き込みを足す
-            if (d && d.upd.toDate().getTime() === this.chats[0].upd.toDate().getTime()) {
+            if (query.docs.length &&//チャットが連続していれば書き込みを足す
+              query.docs[0].data().upd.toDate().getTime() === this.chats[0].upd.toDate().getTime()) {
               this.chats.unshift(data[data.length - 1]);
               setTimeout(() => {
                 let content = <any>document.getElementById('chatscontent');
@@ -300,6 +298,72 @@ export class RoomComponent implements OnInit {
         this.chatLoad(false, "btm", this.newUpds[0]);
       }
     }
+  }
+  edit(e) {
+    let item = e.currentTarget.parentElement.parentElement.parentElement;
+    let icon = e.currentTarget.children[0];
+    let div = item.getElementsByClassName("chattxt");
+    if (icon.name === "brush") {
+      div[0].classList.add("tiny");
+      div[0].contentEditable = true;
+      tinymce.init(tinyinit);
+      icon.name = "send";
+    } else {
+      let upd = new Date(item.children[0].innerHTML);
+      this.dbcon.collection('chat', ref => ref.where('upd', "==", upd)).get().subscribe(query => {
+        if (query.docs.length) {
+          let txt = tinymce.activeEditor.getContent({ format: 'html' });
+          this.dbcon.collection('chat').doc(query.docs[0].id).update({
+            rev: new Date(),
+            txt: txt
+          });
+          div[0].classList.remove("tiny");
+          div[0].contentEditable = false;
+          icon.name = "brush";
+        } else {
+          alert('編集(' + upd + ')に失敗しました。');
+        }
+      });
+    }
+  }
+  delete(e) {
+    let item = e.currentTarget.parentElement.parentElement.parentElement;
+    let div = item.getElementsByClassName("chattxt");
+    let upd = new Date(item.children[0].innerHTML);
+    let mentions = div[0].getElementsByClassName("mention");
+    if (mentions.length) {
+      for (let i = 0; i < mentions.length; i++) {
+        let uid = mentions[i].id;
+        let db = this.db.collection('user').doc(uid);
+        db.collection('mention', ref => ref.where('upd', "==", upd)).get().subscribe(query => {
+          if (query.docs.length) db.collection('mention').doc(query.docs[0].data().uid).delete();
+        });
+      }
+    }
+    this.dbcon.collection('chat', ref => ref.where('upd', "==", upd)).get().subscribe(query => {
+      if (query.docs.length) {
+        this.dbcon.collection('chat').doc(query.docs[0].id).delete();
+        this.chats = this.chats.filter(chat => chat.upd.toDate().getTime() !== upd.getTime());
+      } else {
+        alert('書き込み(' + upd + ')削除に失敗しました。');
+      }
+    });
+  }
+  popMember(e) {
+    let chatIndex = e.currentTarget.parentElement.children[1].innerHTML;
+    let chat = this.chats[this.chats.length - chatIndex - 1];
+    this.php.get("member", { rid: this.data.room.id, uid: chat.uid }).subscribe((res: any) => {
+      if (!res || res.error) {
+        alert("データベースエラーによりメンバーの取得に失敗しました。");
+      } else {
+        let member = { id: chat.uid, na: chat.na, avatar: chat.avatar, auth: 0, payroomid: 0, authroomid: 0 };
+        if (res.length) member = res[0];
+        this.data.popMemberSubject.next({
+          member: member,
+          event: e
+        });
+      }
+    });
   }
   ngOnDestroy() {
     if (this.userSb) this.userSb.unsubscribe();

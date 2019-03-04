@@ -1,0 +1,51 @@
+<ng-container *ngIf="!payMode">
+  <div class="row" *ngFor="let story of storys">
+    <div class="txt" [innerHtml]="story.txt | safe: 'html'"></div>
+    <div class="media" [innerHtml]="story.media | safe: 'html'"></div>
+    <div *ngIf="story.pay>0" style="width:100%;" text-center align-items-center>
+      <ion-button round large (click)="pay()">
+        {{story.pay}}円で続きを見る
+      </ion-button>
+    </div>
+  </div>
+  <div *ngIf="room.lock>9" style="width:100%;" text-center align-items-center>
+    <ion-button round large (click)="goPayMode()">
+      このサロンに加入する
+    </ion-button>
+  </div>
+  <div *ngIf="room.lock===1" style="width:100%;" text-center align-items-center>
+    <span>審査中</span>
+  </div>
+</ng-container>
+<ng-container *ngIf="payMode">
+  <h2>加入にあたって</h2>
+  <h2>注意事項</h2>
+  <h2>返金について</h2>
+  <h2>プライバシーポリシー</h2>
+  <h2>月額：{{price}}円（毎月{{date}}日払い）</h2>
+  <form #form="ngForm" (ngSubmit)="pay(form.value)">
+    <ion-list>
+      <ion-list-header>クレジットカード情報</ion-list-header>
+      <ion-item>
+        <ion-label>カード番号</ion-label>
+        <ion-input [(ngModel)]="card.number" name="number"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label>CVC</ion-label>
+        <ion-input [(ngModel)]="card.cvc" name="cvc"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label>有効期間</ion-label>
+        <ion-select [(ngModel)]="card.exp_month" name="exp_month">
+          <ion-select-option *ngFor="let month of months">{{month}}</ion-select-option>
+        </ion-select>
+        <ion-select [(ngModel)]="card.exp_year" name="exp_year">
+          <ion-select-option *ngFor="let year of years">{{year}}</ion-select-option>
+        </ion-select>
+      </ion-item>
+      <div text-center align-items-center>
+        <ion-button round large type="submit">同意して支払う</ion-button>
+      </div>
+    </ion-list>
+  </form>
+</ng-container>

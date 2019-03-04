@@ -16,7 +16,7 @@
       <ion-button *ngIf="user" (click)="rtc('videocam')" color="danger" icon-left item-right>
         <ion-icon name="videocam"></ion-icon>動画
       </ion-button>
-      <ion-button *ngIf="user" icon-only item-right (click)="logout()" item-right icon-left color="dark">
+      <ion-button *ngIf="user" icon-only item-right (click)="logout()" icon-left color="dark">
         <ion-icon name="exit"></ion-icon>
       </ion-button>
     </ion-item>
@@ -36,9 +36,9 @@
       <ion-icon name="logo-facebook"></ion-icon>
       <ion-icon name="logo-google"></ion-icon>
     </ion-item>
-    <div [class.none]="!data.user.id">
+    <div [class.none]="!data.user.id||!data.room.chat">
       <ion-item no-padding>
-        <div id="tiny"></div>
+        <div class="tiny"></div>
         <ion-button clear icon-only item-right (click)="sendMsg()">
           <ion-icon name="ios-send" ios="ios-send" md="md-send"></ion-icon>
         </ion-button>

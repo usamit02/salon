@@ -16,6 +16,39 @@ export const firebaseConfig = {
 };
 //export const socketConfig: SocketIoConfig = { url: 'http://localhost:3002', options: {} };
 export const socketConfig: SocketIoConfig = { url: 'https://www.clife.cf:3002', options: {} };
+
+export const tinyinit = {
+  selector: ".tiny",
+  menubar: false,
+  inline: true,
+  theme: 'inlite',
+  mobile: {
+    theme: 'mobile',
+    plugins: ['autosave', 'lists', 'autolink'],
+    toolbar: ['undo', 'bold', 'italic', 'styleselect']
+  },
+  language_url: 'https://bloggersguild.cf/js/ja.js',
+  plugins: [
+    'autolink autosave codesample contextmenu link lists advlist table textcolor paste'
+  ],
+  toolbar: 'undo redo | forecolor backcolor | fontselect fontsizeselect styleselect | bullist numlist | blockquote link copy paste',
+  contextmenu: 'up down restoredraft del | inserttable cell row column deletetable | paystart payend',
+  forced_root_block: false, allow_conditional_comments: true, allow_html_in_named_anchor: true, allow_unsafe_link_target: true,
+  setup: editor => {
+    editor.on('Change', e => {
+      console.log('editer change' + e);
+    });
+  }
+}
+
+
+
+
+
+
+
+
+
 /*
  * For easier debugging in development mode, you can import the following file
  * to ignore zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.

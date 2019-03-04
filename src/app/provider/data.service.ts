@@ -15,7 +15,7 @@ export class DataService {
   roomSubject = new Subject<Room>();
   roomState = this.roomSubject.asObservable();
   mentionSubject = new Subject();
-  mentionState = this.mentionSubject.asObservable();
+  popMemberSubject = new Subject();
   mentions = {};
   mentionRooms: Array<any> = [];
   mentionRoomsSubject = new Subject<Array<any>>();
@@ -55,9 +55,6 @@ export class DataService {
     this.room = room;
     this.roomSubject.next(room);
     console.log('joinRoom:' + room.na);
-  }
-  mention(member) {
-    this.mentionSubject.next(member);
   }
   mentionRoom(mentions) {
     let mentionCounts = {}; this.mentions = {};
@@ -100,6 +97,7 @@ export class Room {
   na: string = "メインラウンジ";
   discription: string = "";
   parent: number = 0;
+  lock: number = 0;
   idx: number = 0;
   folder: boolean = false;
   chat: boolean = true;
@@ -107,6 +105,7 @@ export class Room {
   plan: number = 0;
   bookmark: boolean = false;
   csd: Date;
+  auth: number = 0;
 }
 export class Member {
   id: string = "";

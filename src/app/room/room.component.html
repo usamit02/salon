@@ -1,23 +1,33 @@
-<!-- <story *ngIf="room.story" [room]="room" [user]="user"></story>
-  <p>room works!{{room.id}}</p>
- (ionInfinite)="chatLoad($event,'top')"
--->
+<app-story *ngIf="data.room.story" [room]="data.room" [user]="data.user"></app-story>
 <div id="topmsg" class="msg"><span *ngIf="mentionTop" (click)="noticeClick('mentionTop')" class="mention">メンション↑{{mentionTop}}件</span></div>
-<ion-content id="chatscontent" #chatscontent [scrollEvents]="true" (ionScroll)="onScroll($event)" (ionScrollEnd)="onScrollEnd($event)">
+<ion-content [class.none]="!data.room.chat" id="chatscontent" #chatscontent [scrollEvents]="true" (ionScroll)="onScroll($event)"
+  (ionScrollEnd)="onScrollEnd($event)">
   <ion-infinite-scroll #top position="top" threshold="10px" (ionInfinite)="chatLoad($event,'top')">
     <ion-infinite-scroll-content loadingSpinner="bubbles">
     </ion-infinite-scroll-content>
   </ion-infinite-scroll>
   <div><span style="color:lightgrey">{{topMsg}}</span></div>
   <ion-list>
-    <ion-item class="chat" *ngFor="let chat of chats.reverse()" [class.readed]="chat.readed">
+    <ion-item class="chat" *ngFor="let chat of chats.reverse();index as i" [class.readed]="chat.readed">
       <span style="display:none;">{{chat.upd.toDate() | date:'MMM d, y, H:mm:ss:SSS'}}</span>
-      <ion-avatar item-start>
-        <ion-img [src]="chat.avatar"></ion-img>
-      </ion-avatar>
+      <span style="display:none;">{{i}}</span>
+      <ion-item button="true" (click)="popMember($event)">
+        <ion-avatar class="avatar" item-start>
+          <ion-img [src]="chat.avatar"></ion-img>
+        </ion-avatar>
+      </ion-item>
       <div><span class="chatna">{{chat.na}}</span>
-        <span class="chatdate">{{chat.upd.toDate() | date:'short'}}</span>
-        <div [innerHtml]="chat.txt | safe: 'html'"></div>
+        <span class="chatdate"> {{chat.upd.toDate() | date:'short'}}</span>
+        <span class="chatdate" *ngIf="chat.rev"> {{chat.rev.toDate() | date:'short'}}修正</span>
+        <span *ngIf="chat.uid === data.user.id || data.room.auth >=200" slot="end">
+          <ion-button slot="icon-only" (click)="edit($event)" color="light">
+            <ion-icon name="brush"></ion-icon>
+          </ion-button>
+          <ion-button slot="icon-only" (click)="delete($event)" color="light">
+            <ion-icon name="trash"></ion-icon>
+          </ion-button>
+        </span>
+        <div class="chattxt" [innerHtml]="chat.txt | safe: 'html'"></div>
       </div>
     </ion-item>
   </ion-list>

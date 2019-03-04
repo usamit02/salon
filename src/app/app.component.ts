@@ -7,7 +7,7 @@ import { Room, DataService } from './provider/data.service';
 import { Router } from '@angular/router';
 import { Socket } from 'ngx-socket-io';
 import { MemberComponent } from './member/member.component';
-const FOLDER = { id: 1, na: "ブロガーズギルド", discription: "", idx: 0, chat: false, story: false, plan: 0, parent: 1, folder: true, bookmark: false, csd: null };
+const FOLDER = { id: 1, na: "ブロガーズギルド", discription: "", lock: 0, idx: 0, chat: false, story: false, plan: 0, parent: 1, folder: true, bookmark: false, csd: null, auth: null };
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
@@ -41,16 +41,19 @@ export class AppComponent {
     this.data.roomState.subscribe((room: Room) => {
       this.room = room;
       this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: this.data.user, rtc: "" });
-      this.php.get('member', { room: room.id }).subscribe((members: any) => {
+      this.php.get('member', { rid: room.id }).subscribe((members: any) => {
         this.offMembers = [];
         for (let i = 0; i < members.length; i++) {
           var f = true;
           for (let j = 0; j < this.onMembers.length; j++) {
-            if (members[i].id === this.onMembers[j].id) f = false;
+            if (members[i].id === this.onMembers[j].id) f = true;//false;
           }
           if (f) this.offMembers.push(members[i]);
         }
       });
+    });
+    this.data.popMemberSubject.asObservable().subscribe((e: any) => {
+      this.popMember(e.member, e.event);
     });
     this.socket.connect();
     this.socket.on("join", users => {

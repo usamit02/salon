@@ -16,12 +16,14 @@ import { AngularFirestoreModule } from '@angular/fire/firestore';
 import { FormsModule } from '@angular/forms';
 import { PhpService } from './provider/php.service';
 import { DataService } from './provider/data.service';
+import { ToastService } from './provider/toast.service';
 import { RoomComponent } from './room/room.component';
 import { MainComponent } from './main/main.component';
 import { MemberComponent } from './member/member.component';
 import { SafePipe } from './pipe/safe.pipe';
+import { StoryComponent } from './story/story.component';
 @NgModule({
-  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe],
+  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, StoryComponent],
   entryComponents: [MemberComponent],
   imports: [
     BrowserModule,
@@ -40,7 +42,8 @@ import { SafePipe } from './pipe/safe.pipe';
     SplashScreen,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     PhpService,
-    DataService
+    DataService,
+    ToastService
   ],
   bootstrap: [AppComponent]
 })
