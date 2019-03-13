@@ -19,16 +19,16 @@ export class DataService {
   mentions = {};
   mentionRooms: Array<any> = [];
   mentionRoomsSubject = new Subject<Array<any>>();
-  mentionRoomsState = this.mentionRoomsSubject.asObservable();
+  mailUser: User;
   constructor(private php: PhpService, ) { }
   login(user) {
     if (this.user.id !== user.uid) {
       this.php.get("user", { uid: user.uid, na: user.displayName, avatar: user.photoURL }).subscribe((res: any) => {
-        if (res.msg !== "ok") {
+        if (res.msg === "ok") {
+          this.user = res.user;
+        } else {
           alert(res.msg);
           this.user = new User;
-        } else {
-          this.user = { id: res.id, na: res.na, avatar: res.avatar, p: res.p };
         }
         this.userSubject.next(this.user);
         console.log("login");
@@ -90,26 +90,26 @@ export class User {
   id: string = "";
   na: string = "ログインして";
   avatar: string = "";
-  p: number = 0;
+  p?: number = 0;
+  no?: number = 0;
+  upd?: Date;
+  rev?: Date;
+  mail?: string;
 }
 export class Room {
   id: number = 2;
   na: string = "メインラウンジ";
-  discription: string = "";
-  parent: number = 0;
-  lock: number = 0;
-  idx: number = 0;
-  folder: boolean = false;
-  chat: boolean = true;
-  story: boolean = false;
-  plan: number = 0;
-  bookmark: boolean = false;
-  csd: Date;
-  auth: number = 0;
-}
-export class Member {
-  id: string = "";
-  na: string = "";
-  avatar: string = "";
-  p?: number = 0;
+  discription?: string = "";
+  parent?: number = 0;
+  lock?: number = 0;
+  idx?: number = 0;
+  folder?: boolean = false;
+  chat?: boolean = true;
+  story?: boolean = false;
+  plan?: number = 0;
+  bookmark?: boolean = false;
+  csd?: Date;
+  auth?: number = 0;
+  count?: number = 0;
+  //uid?: string = "";
 }

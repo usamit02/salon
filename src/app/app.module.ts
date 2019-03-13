@@ -16,7 +16,7 @@ import { AngularFirestoreModule } from '@angular/fire/firestore';
 import { FormsModule } from '@angular/forms';
 import { PhpService } from './provider/php.service';
 import { DataService } from './provider/data.service';
-import { ToastService } from './provider/toast.service';
+import { UiService } from './provider/ui.service';
 import { RoomComponent } from './room/room.component';
 import { MainComponent } from './main/main.component';
 import { MemberComponent } from './member/member.component';
@@ -43,7 +43,7 @@ import { StoryComponent } from './story/story.component';
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     PhpService,
     DataService,
-    ToastService
+    UiService
   ],
   bootstrap: [AppComponent]
 })

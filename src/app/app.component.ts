@@ -3,11 +3,11 @@ import { Platform, PopoverController } from '@ionic/angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { PhpService } from './provider/php.service';
-import { Room, DataService } from './provider/data.service';
+import { User, Room, DataService } from './provider/data.service';
 import { Router } from '@angular/router';
 import { Socket } from 'ngx-socket-io';
 import { MemberComponent } from './member/member.component';
-const FOLDER = { id: 1, na: "ブロガーズギルド", discription: "", lock: 0, idx: 0, chat: false, story: false, plan: 0, parent: 1, folder: true, bookmark: false, csd: null, auth: null };
+const FOLDER = { id: 1, na: "ブロガーズギルド", parent: 1, folder: true };
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
@@ -19,8 +19,8 @@ export class AppComponent {
   allRooms: Array<Room> = [];
   folder: Room = FOLDER;
   bookmk: boolean = false;
-  onMembers = [];
-  offMembers = [];
+  onMembers: Array<User> = [];
+  offMembers: Array<User> = [];
   bufMember: string;
   member: string;
   constructor(
@@ -61,24 +61,39 @@ export class AppComponent {
       this.onMembers = users;
     });
   }
-  joinRoom(room) {
+  joinRoom(room: Room) {
     if (room.folder) {
       this.rooms = this.allRooms.filter(r => r.parent === room.id);
       this.folder = room;
     }
     this.router.navigate(['/home/room', room.id]);
   }
-  retRoom() {
+  retRoom(home?: boolean) {
     if (this.folder.id === 1 && this.data.user.id) {
       this.bookmk = !this.bookmk;
     }
     if (this.bookmk) {
       this.rooms = this.allRooms.filter(room => room.bookmark);
     } else {
-      let folder = this.allRooms.filter(room => room.id === this.folder.parent);
-      this.folder = folder.length ? folder[0] : FOLDER;
+      if (home) {
+        this.folder = FOLDER;
+      } else {
+        let folder = this.allRooms.filter(room => room.id === this.folder.parent);
+        this.folder = folder.length ? folder[0] : FOLDER;
+      }
       this.rooms = this.allRooms.filter(room => room.parent === this.folder.id);
     }
+  }
+  mention() {
+    this.folder = { id: -1, na: "メンション", parent: 1 };
+    this.rooms = this.data.mentionRooms;
+  }
+  mail() {
+    this.folder = { id: -1, na: "ダイレクトメール", parent: 1 };
+    this.rooms = [];
+  }
+  config() {
+    this.folder = { id: -1, na: "設定", parent: 1 };
   }
   searchMember() {
     if (!this.member.trim()) return;

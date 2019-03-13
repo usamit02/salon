@@ -12,13 +12,13 @@
     <ion-item button="true" (click)="mention()">
       <span>メンションする</span>
     </ion-item>
-    <ion-item button="true" (click)="dm()">
+    <ion-item button="true" (click)="mail()">
       <span>ダイレクトメールを送る</span>
     </ion-item>
-    <ion-item button="true" (click)="dm()">
+    <ion-item button="true" (click)="detail()">
       <span>詳細を見る</span>
     </ion-item>
-    <ion-item *ngIf="data.room.plan || data.room.applyplan && data.room.auth >=200 && member.auth <= data.room.auth"
+    <ion-item *ngIf="(data.room.plan || data.room.applyplan) && data.room.auth >=200 && member.auth <= data.room.auth"
       button="true" (click)="kick()" color="warning">
       <span>Kick！</span>
     </ion-item>

@@ -1,4 +1,7 @@
 <ng-container *ngIf="!payMode">
+  <ion-item *ngIf="room.lock===1" color="warning" text-center align-items-center>
+    <span>入会審査中です。もうしばらくお待ちください。</span>
+  </ion-item>
   <div class="row" *ngFor="let story of storys">
     <div class="txt" [innerHtml]="story.txt | safe: 'html'"></div>
     <div class="media" [innerHtml]="story.media | safe: 'html'"></div>
@@ -13,8 +16,10 @@
       このサロンに加入する
     </ion-button>
   </div>
-  <div *ngIf="room.lock===1" style="width:100%;" text-center align-items-center>
-    <span>審査中</span>
+  <div *ngIf="room.plan && !room.lock" style="width:100%;" text-center align-items-center>
+    <ion-button round color="danger" (click)="leave()">
+      このサロンを退会する
+    </ion-button>
   </div>
 </ng-container>
 <ng-container *ngIf="payMode">
@@ -22,30 +27,43 @@
   <h2>注意事項</h2>
   <h2>返金について</h2>
   <h2>プライバシーポリシー</h2>
-  <h2>月額：{{price}}円（毎月{{date}}日払い）</h2>
-  <form #form="ngForm" (ngSubmit)="pay(form.value)">
+  <h2>月額：{{plan.amount}}円（毎月{{plan.billing_day}}日払い）</h2>
+  <p *ngIf="plan.trial_days">無料お試し期間:{{plan.trial_days}}日間</p>
+  <div *ngIf="card.last4">
+    <p>登録済クレジットカード</p>
+    　 <p>カード番号　　{{card.brand}} ****-****-****-{{card.last4}}</p>
+    <p>有効期間　　　{{card.exp_year}}年{{card.exp_month}}月</p>
+    <ion-item text-center align-items-center>
+      <ion-button round large (click)="pay('')">同意して申し込む</ion-button>
+      <ion-button *ngIf="!card.change" color="light" (click)="card.change=true">クレジットカードを変更する</ion-button>
+    </ion-item>
+  </div>
+  <form #form="ngForm" (ngSubmit)="newpay(form.value)" *ngIf="!card.last4||card.change">
     <ion-list>
-      <ion-list-header>クレジットカード情報</ion-list-header>
+      <ion-list-header>新しいクレジットカード</ion-list-header>
       <ion-item>
         <ion-label>カード番号</ion-label>
-        <ion-input [(ngModel)]="card.number" name="number"></ion-input>
+        <ion-input [(ngModel)]="newcard.number" name="number"></ion-input>
       </ion-item>
       <ion-item>
         <ion-label>CVC</ion-label>
-        <ion-input [(ngModel)]="card.cvc" name="cvc"></ion-input>
+        <ion-input [(ngModel)]="newcard.cvc" name="cvc"></ion-input>
       </ion-item>
       <ion-item>
         <ion-label>有効期間</ion-label>
-        <ion-select [(ngModel)]="card.exp_month" name="exp_month">
+        <ion-select [(ngModel)]="newcard.exp_month" name="exp_month">
           <ion-select-option *ngFor="let month of months">{{month}}</ion-select-option>
         </ion-select>
-        <ion-select [(ngModel)]="card.exp_year" name="exp_year">
+        <ion-select [(ngModel)]="newcard.exp_year" name="exp_year">
           <ion-select-option *ngFor="let year of years">{{year}}</ion-select-option>
         </ion-select>
       </ion-item>
       <div text-center align-items-center>
-        <ion-button round large type="submit">同意して支払う</ion-button>
+        <ion-button round large type="submit">同意して申し込む</ion-button>
       </div>
     </ion-list>
   </form>
+
+
+  <p *ngIf="plan.auth_days">※審査により加入できない場合があります。{{plan.auth_days}}日以内に加入決定します。</p>
 </ng-container>

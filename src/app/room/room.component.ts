@@ -35,6 +35,10 @@ export class RoomComponent implements OnInit {
         this.data.room = new Room;
         this.data.joinRoom(this.data.room);
         this.chatInit();
+      } else if (isNaN(params.id) && this.data.user.id) {//ダイレクトメール
+        this.data.mailUser.mail = params.id;
+        this.chatInit(params.id);
+        this.data.joinRoom({ id: -1, na: this.data.mailUser.na + "へメール", chat: true })
       } else if (this.data.rooms.length) {
         this.readRooms(this.data.rooms, params.id);
       } else {
@@ -60,7 +64,7 @@ export class RoomComponent implements OnInit {
           });
       }
     });
-    this.mentionRoomsSb = this.data.mentionRoomsState.subscribe(mentionRooms => {
+    this.mentionRoomsSb = this.data.mentionRoomsSubject.asObservable().subscribe(mentionRooms => {
       this.onScrollEnd({ currentTarget: <any>document.getElementById('chatscontent') });
     });
   }
@@ -96,16 +100,16 @@ export class RoomComponent implements OnInit {
       this.mentionTop = 0; this.mentionBtm = 0;
     }
   }
-  readRooms(rooms, id) {
+  readRooms(rooms: Array<Room>, id: number) {
     let room = rooms.filter(room => { return room.id == id });
     this.data.room = room.length ? room[0] : new Room;
     this.data.joinRoom(this.data.room);
     if (room[0].chat) this.chatInit();
   }
-  chatInit() {
+  chatInit(mail?: string) {
     this.chats = []; this.currentY = 0; this.readed = false; this.newUpds = [];
     this.top.disabled = true; this.btm.disabled = true;
-    this.dbcon = this.db.collection('room').doc(this.data.room.id.toString());
+    this.dbcon = mail ? this.db.collection('mail').doc(mail) : this.db.collection('room').doc(this.data.room.id.toString());
     this.chatLoad(false, this.data.room.csd ? "btm" : "top");
     if (this.chatSb) this.chatSb.unsubscribe();
     this.chatSb = this.dbcon.collection('chat', ref => ref.where('upd', '>', new Date())).valueChanges().
