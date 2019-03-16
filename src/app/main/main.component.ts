@@ -96,12 +96,13 @@ export class MainComponent {
     let txt = ed.getContent({ format: 'html' });
     if (!txt) return;
     let upd = new Date();
-    let dbcon = this.data.room.id === -1 ?  //ダイレクトメール
-      this.db.collection('mail').doc(this.data.mailUser.mail.toString()) :
-      this.db.collection('room').doc(this.data.room.id.toString());
-    dbcon.collection('chat').add({
+    let collection = this.data.room.id > 1000000000 ? 'mail' : 'room';
+    this.db.collection(collection).doc(this.data.room.id.toString()).collection('chat').add({
       uid: this.data.user.id, na: this.data.user.na, avatar: this.data.user.avatar, txt: txt, upd: upd
     });
+    if (collection === 'mail') {
+      this.db.collection('mail').doc(this.data.room.id.toString()).set({ upd: upd }, { merge: true });
+    }
     let mentions = ed.dom.select('.mention');
     for (let i = 0; i < mentions.length; i++) {
       this.db.collection('user').doc(mentions[i].id).collection('mention').add({

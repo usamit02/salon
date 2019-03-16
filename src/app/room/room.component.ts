@@ -35,10 +35,9 @@ export class RoomComponent implements OnInit {
         this.data.room = new Room;
         this.data.joinRoom(this.data.room);
         this.chatInit();
-      } else if (isNaN(params.id) && this.data.user.id) {//ダイレクトメール
-        this.data.mailUser.mail = params.id;
+      } else if (params.id > 1000000000 && this.data.user.id) {//ダイレクトメール
         this.chatInit(params.id);
-        this.data.joinRoom({ id: -1, na: this.data.mailUser.na + "へメール", chat: true })
+        this.data.joinRoom({ id: params.id, na: this.data.mailUser.na + "へメール", chat: true })
       } else if (this.data.rooms.length) {
         this.readRooms(this.data.rooms, params.id);
       } else {
@@ -117,23 +116,26 @@ export class RoomComponent implements OnInit {
         if (!data.length) return;
         this.dbcon.collection('chat', ref => ref.where('upd', "<", data[data.length - 1].upd).orderBy('upd', 'desc').
           limit(1)).get().subscribe(query => {//書き込み直前のチャットを取得
-            if (query.docs.length &&//チャットが連続していれば書き込みを足す
-              query.docs[0].data().upd.toDate().getTime() === this.chats[0].upd.toDate().getTime()) {
+            if (query.docs.length) {//初回書き込みでない
+              if (query.docs[0].data().upd.toDate().getTime() === this.chats[0].upd.toDate().getTime()) {
+                this.chats.unshift(data[data.length - 1]);//チャットが連続していれば書き込みを足す（chats[0]が最新、reverse）
+                setTimeout(() => {
+                  let content = <any>document.getElementById('chatscontent');
+                  let chats = content.children[2].children;
+                  if (this.currentY + content.scrollHeight > chats[chats.length - 1].offsetTop) {
+                    this.content.scrollToBottom(300);
+                    this.btmMsg = "";
+                    this.data.room.csd = data[0].upd.toDate();
+                    this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(this.data.room.csd) }).subscribe(dummy => { });
+                  } else {//画面上に最近のチャットが表示されていない
+                    this.newUpds.push(data[data.length - 1].upd.toDate());
+                  }
+                }, 1000);
+              } else {//最近のチャットをchatLoadで読み込んでいない
+                this.newUpds.push(data[data.length - 1].upd.toDate());
+              }
+            } else {//初回書き込み
               this.chats.unshift(data[data.length - 1]);
-              setTimeout(() => {
-                let content = <any>document.getElementById('chatscontent');
-                let chats = content.children[2].children;
-                if (this.currentY + content.scrollHeight > chats[chats.length - 1].offsetTop) {
-                  this.content.scrollToBottom(300);
-                  this.btmMsg = "";
-                  this.data.room.csd = data[0].upd.toDate();
-                  this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(this.data.room.csd) }).subscribe(dummy => { });
-                } else {
-                  this.newUpds.push(data[data.length - 1].upd.toDate());
-                }
-              }, 1000);
-            } else {
-              this.newUpds.push(data[data.length - 1].upd.toDate());
             }
           });
       });
@@ -155,10 +157,10 @@ export class RoomComponent implements OnInit {
     } else {
       db = this.dbcon.collection('chat', ref => ref.where('upd', ">", cursor).orderBy('upd', 'asc').limit(20));
     }
-    this.chatsUsers.unshift(this.data.user);
+    this.chatsUsers.unshift(this.data.user);//ログイン切り替え対策用
     db.get().subscribe(query => {
-      let chatsUser = this.chatsUsers.pop();
-      if (chatsUser.id !== this.data.user.id) return;
+      let chatsUser = this.chatsUsers.pop();//前回読み込んだユーザー
+      if (chatsUser.id !== this.data.user.id) return;//現在読み込まれているchatsが別のログインユーザーの場合、追加読込しない
       let docs1 = docsPush(query, this);
       let limit = direction === 'btm' && !this.chats.length && docs1.length < 20 ? 20 - docs1.length : 0;
       if (!limit) { limit = 1; cursor = new Date("1/1/1900"); }
@@ -194,8 +196,8 @@ export class RoomComponent implements OnInit {
                   this.btmMsg = "";
                 }
               } else {
-                this.topMsg = "既読メッセージを表示↑";
-                this.content.scrollByPoint(0, 20, 300);//this.data.scroll("btmOne");
+                //this.topMsg = "既読メッセージを表示↑";
+                //this.content.scrollByPoint(0, 20, 300);//this.data.scroll("btmOne");
               }
             }
             setTimeout(() => {
@@ -231,7 +233,7 @@ export class RoomComponent implements OnInit {
       let upds = this.currentUpds(e);
       if (upds.length) {
         this.deleteNotice(upds);
-        let upd = upds[upds.length - 1];
+        let upd = upds[upds.length - 1];//画面上見えてる最新の日付
         if (!this.data.room.csd || new Date(this.data.room.csd).getTime() < upd.getTime()) {
           this.data.room.csd = upd;
           this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(upd) }).subscribe(dummy => { });

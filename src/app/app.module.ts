@@ -7,7 +7,7 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { HttpClientModule } from '@angular/common/http'
-import { SocketIoModule } from 'ngx-socket-io';
+//import { SocketIoModule } from 'ngx-socket-io';
 import { MentionModule } from 'angular-mentions/mention';
 import { socketConfig, firebaseConfig } from '../environments/environment';
 import { AngularFireModule } from 'angularfire2';
@@ -30,7 +30,7 @@ import { StoryComponent } from './story/story.component';
     IonicModule.forRoot(),
     HttpClientModule,
     AppRoutingModule,
-    SocketIoModule.forRoot(socketConfig),
+    //SocketIoModule.forRoot(socketConfig),
     AngularFireModule.initializeApp(firebaseConfig),
     AngularFireAuthModule,
     AngularFirestoreModule,

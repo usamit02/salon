@@ -10,15 +10,17 @@
         <ion-icon name="headset"></ion-icon>
         視聴
       </ion-button>
-      <ion-button *ngIf="user" (click)="rtc('mic')" color="danger" icon-left item-right>
-        <ion-icon name="mic"></ion-icon>ラジオ
-      </ion-button>
-      <ion-button *ngIf="user" (click)="rtc('videocam')" color="danger" icon-left item-right>
-        <ion-icon name="videocam"></ion-icon>動画
-      </ion-button>
-      <ion-button *ngIf="user" icon-only item-right (click)="logout()" icon-left color="dark">
-        <ion-icon name="exit"></ion-icon>
-      </ion-button>
+      <ion-buttons *ngIf="data.user.id">
+        <ion-button (click)="rtc('mic')" color="danger" icon-left item-right>
+          <ion-icon name="mic"></ion-icon>ラジオ
+        </ion-button>
+        <ion-button (click)="rtc('videocam')" color="danger" icon-left item-right>
+          <ion-icon name="videocam"></ion-icon>動画
+        </ion-button>
+        <ion-button icon-only item-right (click)="logout()" icon-left color="dark">
+          <ion-icon name="exit"></ion-icon>
+        </ion-button>
+      </ion-buttons>
     </ion-item>
     <ion-buttons slot="end">
       <ion-menu-button menu="end"></ion-menu-button>

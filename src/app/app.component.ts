@@ -5,8 +5,9 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { PhpService } from './provider/php.service';
 import { User, Room, DataService } from './provider/data.service';
 import { Router } from '@angular/router';
-import { Socket } from 'ngx-socket-io';
+//import { Socket } from 'ngx-socket-io';
 import { MemberComponent } from './member/member.component';
+import { AngularFirestore } from '@angular/fire/firestore';
 const FOLDER = { id: 1, na: "ブロガーズギルド", parent: 1, folder: true };
 @Component({
   selector: 'app-root',
@@ -25,8 +26,8 @@ export class AppComponent {
   member: string;
   constructor(
     private platform: Platform, private splashScreen: SplashScreen, private statusBar: StatusBar,
-    private data: DataService, private php: PhpService, private router: Router, private socket: Socket,
-    public pop: PopoverController
+    private data: DataService, private php: PhpService, private router: Router,
+    public pop: PopoverController, private db: AngularFirestore,
   ) {
     this.platform.ready().then(() => {
       this.statusBar.styleDefault();
@@ -40,7 +41,7 @@ export class AppComponent {
     });
     this.data.roomState.subscribe((room: Room) => {
       this.room = room;
-      this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: this.data.user, rtc: "" });
+      //this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: this.data.user, rtc: "" });
       this.php.get('member', { rid: room.id }).subscribe((members: any) => {
         this.offMembers = [];
         for (let i = 0; i < members.length; i++) {
@@ -55,16 +56,19 @@ export class AppComponent {
     this.data.popMemberSubject.asObservable().subscribe((e: any) => {
       this.popMember(e.member, e.event);
     });
-    this.socket.connect();
+    /*this.socket.connect();
     this.socket.on("join", users => {
       console.log(users[0].na + "_" + users[0].rtc);
       this.onMembers = users;
-    });
+    });*/
   }
   joinRoom(room: Room) {
     if (room.folder) {
       this.rooms = this.allRooms.filter(r => r.parent === room.id);
       this.folder = room;
+    }
+    if (room.id > 1000000000) {
+      this.data.mailUser = { id: room.uid, na: room.na, avatar: "" }
     }
     this.router.navigate(['/home/room', room.id]);
   }
@@ -84,16 +88,53 @@ export class AppComponent {
       this.rooms = this.allRooms.filter(room => room.parent === this.folder.id);
     }
   }
+  newChat() {
+    let rids = [];
+    for (let i = 0; i < this.rooms.length; i++) {
+      rids.push(this.rooms[i].id);
+    }
+    this.php.get('room', { uid: this.data.user.id, rids: JSON.stringify(rids) }).subscribe((res: any) => {
+      for (let i = 0; i < this.rooms.length; i++) {
+        if (this.rooms[i].id in res) {
+          let rooms = this.rooms;
+          let ddd = this.rooms[i].upd;
+          let d = this.rooms[i].upd.getTime();
+          let dddd = Math.floor(this.rooms[i].upd.getTime() / 1000);
+          let dd = new Date(this.rooms[i].upd);
+          let e = new Date(res[this.rooms[i].id].csd);
+
+          let room = new Date(this.rooms[i].upd).getTime();
+          let cursor = new Date(res[this.rooms[i].id].csd).getTime() / 1000;
+          let n = dddd > cursor;
+          this.rooms[i].new = Math.floor(this.rooms[i].upd.getTime() / 1000) > new Date(res[this.rooms[i].id].csd).getTime() / 1000;
+        }
+      }
+    });
+  }
   mention() {
-    this.folder = { id: -1, na: "メンション", parent: 1 };
+    this.folder = { id: -2, na: "メンション", parent: 1 };
     this.rooms = this.data.mentionRooms;
   }
   mail() {
     this.folder = { id: -1, na: "ダイレクトメール", parent: 1 };
-    this.rooms = [];
+    this.db.collection("mail", ref => ref.where('uid_old', '==', this.data.user.id)).get().subscribe(query => {
+      let rooms = [];
+      query.forEach(doc => {
+        let d = doc.data();
+        rooms.push({ id: Number(doc.id), na: d.na_new, parent: -1, upd: d.upd.toDate(), uid: d.uid_new });
+      });
+      this.db.collection("mail", ref => ref.where('uid_new', '==', this.data.user.id)).get().subscribe(query => {
+        query.forEach(doc => {
+          let d = doc.data();
+          rooms.push({ id: Number(doc.id), na: d.na_old, parent: -1, upd: d.upd.toDate(), uid: d.uid_old });
+        });
+        this.rooms = rooms;
+        this.newChat();
+      });
+    });
   }
   config() {
-    this.folder = { id: -1, na: "設定", parent: 1 };
+    this.folder = { id: -3, na: "設定", parent: 1 };
   }
   searchMember() {
     if (!this.member.trim()) return;

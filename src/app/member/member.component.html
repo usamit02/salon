@@ -9,11 +9,11 @@
 <ion-content>
   <ion-img [src]="member.avatar"></ion-img>
   <ion-list>
-    <ion-item button="true" (click)="mention()">
+    <ion-item *ngIf="data.room.id<1000000000" button="true" (click)="mention()">
       <span>メンションする</span>
     </ion-item>
-    <ion-item button="true" (click)="mail()">
-      <span>ダイレクトメールを送る</span>
+    <ion-item *ngIf="data.room.id<10000000000" button="true" (click)="mail()">
+      <span>ダイレクトメール</span>
     </ion-item>
     <ion-item button="true" (click)="detail()">
       <span>詳細を見る</span>

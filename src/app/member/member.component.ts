@@ -28,20 +28,23 @@ export class MemberComponent implements OnInit {
   mail() {
     this.close();
     this.data.mailUser = this.member;
-    let uid_old, uid_new;
-    let user = this.data.user;
-    let member = this.member;
+    let uid_old, uid_new, na_old, na_new;
+    let user = new Date(this.data.user.upd).getTime();
+    let member = new Date(this.member.upd).getTime();
     if (new Date(this.data.user.upd).getTime() < new Date(this.member.upd).getTime()) {
       uid_old = this.data.user.id; uid_new = this.member.id;
+      na_old = this.data.user.na; na_new = this.member.na;
     } else {
       uid_old = this.member.id; uid_new = this.data.user.id;
+      na_old = this.member.na; na_new = this.data.user.na
     }
     this.db.collection("mail", ref => ref.where('uid_old', '==', uid_old).where('uid_new', '==', uid_new)).get().subscribe(query => {
       if (query.docs.length) {
         this.router.navigate(['/home/room', query.docs[0].id]);
       } else {
-        this.db.collection("mail").add({ uid_old: uid_old, uid_new: uid_new }).then(ref => {
-          this.router.navigate(['/home/room', ref.id])
+        let id = Math.floor(new Date().getTime() / 1000).toString();
+        this.db.collection("mail").doc(id).set({ uid_old: uid_old, uid_new: uid_new, na_old: na_old, na_new: na_new }).then(ref => {
+          this.router.navigate(['/home/room', id])
             .catch(error => {
               alert(error);
             });

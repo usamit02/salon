@@ -109,7 +109,9 @@ export class Room {
   plan?: number = 0;
   bookmark?: boolean = false;
   csd?: Date;
+  upd?: Date;
+  new?: boolean = false;
   auth?: number = 0;
   count?: number = 0;
-  //uid?: string = "";
+  uid?: string = "";
 }
