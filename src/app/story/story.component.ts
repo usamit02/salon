@@ -36,10 +36,10 @@ export class StoryComponent implements OnInit {
   goPayMode() {
     if (this.data.user.id) {
       this.payMode = true;
-      this.ui.loading("処理中...");
+      this.ui.loading("読込中...");
       Payjp.setPublicKey("pk_test_12e1f56f9f92414d7b00af63");
       this.php.get("pay/plan", { uid: this.data.user.id, rid: this.room.id, pid: this.room.plan }).subscribe((res: any) => {
-        this.ui.loader.dismiss();
+        this.ui.loadend();
         if (res.error) {
           this.ui.alert("プランの読込に失敗しました。再読み込みを試してください。\n" + res.error);
         } else {
@@ -55,7 +55,7 @@ export class StoryComponent implements OnInit {
   pay(token: string) {
     this.ui.loading("支払中...");
     this.php.get("pay/charge", { rid: this.room.id, uid: this.user.id, na: this.user.na, token: token }).subscribe((res: any) => {
-      this.ui.loader.dismiss();
+      this.ui.loadend();
       if (res.msg === "ok") {
         this.payMode = false;
         this.data.readRooms();
@@ -84,9 +84,9 @@ export class StoryComponent implements OnInit {
     this.ui.confirm("退会", this.room.na + "を退会します。");
     this.ui.confirmSubject.asObservable().subscribe(res => {
       if (res) {
-        this.ui.loading("処理中...");
+        this.ui.loading();
         this.php.get("pay/roompay", { uid: this.user.id, rid: this.room.id, ban: this.user.id }).subscribe((res: any) => {
-          this.ui.loader.dismiss();
+          this.ui.loadend();
           if (res.msg === 'ok') {
             this.ui.pop(this.room.na + "から脱退しました。次回ログインから入室できません。");
           } else {

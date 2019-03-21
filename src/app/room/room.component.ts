@@ -37,7 +37,7 @@ export class RoomComponent implements OnInit {
         this.chatInit();
       } else if (params.id > 1000000000 && this.data.user.id) {//ダイレクトメール
         this.chatInit(params.id);
-        this.data.joinRoom({ id: params.id, na: this.data.mailUser.na + "へメール", chat: true })
+        this.data.joinRoom({ id: params.id, na: this.data.directUser.na + "へメール", chat: true })
       } else if (this.data.rooms.length) {
         this.readRooms(this.data.rooms, params.id);
       } else {
@@ -105,10 +105,10 @@ export class RoomComponent implements OnInit {
     this.data.joinRoom(this.data.room);
     if (room[0].chat) this.chatInit();
   }
-  chatInit(mail?: string) {
+  chatInit(direct?: string) {
     this.chats = []; this.currentY = 0; this.readed = false; this.newUpds = [];
     this.top.disabled = true; this.btm.disabled = true;
-    this.dbcon = mail ? this.db.collection('mail').doc(mail) : this.db.collection('room').doc(this.data.room.id.toString());
+    this.dbcon = direct ? this.db.collection('direct').doc(direct) : this.db.collection('room').doc(this.data.room.id.toString());
     this.chatLoad(false, this.data.room.csd ? "btm" : "top");
     if (this.chatSb) this.chatSb.unsubscribe();
     this.chatSb = this.dbcon.collection('chat', ref => ref.where('upd', '>', new Date())).valueChanges().

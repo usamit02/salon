@@ -27,7 +27,7 @@
         </ion-list>
         <ion-list *ngIf="folder.id===1 && !bookmk">
           <ion-item *ngIf="data.mentionRooms.length" button="true" (click)="mention()"><span>メンション</span><span class="mention">{{data.mentionRooms.length}}</span></ion-item>
-          <ion-item button="true" (click)="mail()"><span>ダイレクトメール</span></ion-item>
+          <ion-item button="true" (click)="direct()"><span>ダイレクト</span></ion-item>
           <ion-item button="true" (click)="config()"><span>設定</span></ion-item>
         </ion-list>
       </ion-content>

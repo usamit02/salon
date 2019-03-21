@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 export class MemberComponent implements OnInit {
   member;
   black: boolean = false;
+  block: Number;
   constructor(private navParams: NavParams, private pop: PopoverController, private data: DataService,
     private php: PhpService, private ui: UiService, private db: AngularFirestore, private router: Router, ) { }
   ngOnInit() {
@@ -20,17 +21,24 @@ export class MemberComponent implements OnInit {
     let room = this.data.room;
     let member = this.member;
     let a = 0;
+    if (this.data.user.id) {
+      this.php.get("member", { uid: this.data.user.id, mid: this.member.id }).subscribe((res: any) => {
+        if (!res || res.msg) {
+          alert("ブロック状況の読込に失敗しました。\r\n" + res.msg);
+        } else {
+          this.block = res.block;
+        }
+      });
+    }
   }
   mention() {
     this.data.mentionSubject.next(this.member);
     this.close();
   }
-  mail() {
+  direct() {
     this.close();
-    this.data.mailUser = this.member;
+    this.data.directUser = this.member;
     let uid_old, uid_new, na_old, na_new;
-    let user = new Date(this.data.user.upd).getTime();
-    let member = new Date(this.member.upd).getTime();
     if (new Date(this.data.user.upd).getTime() < new Date(this.member.upd).getTime()) {
       uid_old = this.data.user.id; uid_new = this.member.id;
       na_old = this.data.user.na; na_new = this.member.na;
@@ -38,18 +46,32 @@ export class MemberComponent implements OnInit {
       uid_old = this.member.id; uid_new = this.data.user.id;
       na_old = this.member.na; na_new = this.data.user.na
     }
-    this.db.collection("mail", ref => ref.where('uid_old', '==', uid_old).where('uid_new', '==', uid_new)).get().subscribe(query => {
+    this.db.collection("direct", ref => ref.where('uid_old', '==', uid_old).where('uid_new', '==', uid_new)).get().subscribe(query => {
       if (query.docs.length) {
         this.router.navigate(['/home/room', query.docs[0].id]);
       } else {
         let id = Math.floor(new Date().getTime() / 1000).toString();
-        this.db.collection("mail").doc(id).set({ uid_old: uid_old, uid_new: uid_new, na_old: na_old, na_new: na_new }).then(ref => {
+        this.db.collection("direct").doc(id).set({ uid_old: uid_old, uid_new: uid_new, na_old: na_old, na_new: na_new }).then(ref => {
           this.router.navigate(['/home/room', id])
             .catch(error => {
               alert(error);
             });
         });
       }
+    });
+  }
+  blocking() {
+    //this.ui.loading();    
+    this.php.get("member", { uid: this.data.user.id, mid: this.member.id, block: this.block }).subscribe((res: any) => {
+      //this.ui.loader.dismiss();
+      if (!res || res.msg) {
+        alert("ブロック設定変更に失敗しました。\r\n" + res.msg);
+      } else {
+        let msg = res.block ? "ブロック" : "受付開始"
+        this.ui.pop(this.member.na + "からの通知を" + msg + "しました。");
+        this.block = res.block;
+      }
+      this.close();
     });
   }
   kick() {

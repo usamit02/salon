@@ -29,11 +29,20 @@ export class UiService {
       console.log(data);
     });
   }
-  async loading(msg: string) {
+  async loading(msg?: string) {
+    msg = msg ? msg : "処理中...";
     this.loader = await this.loadingController.create({
       message: msg,
+      duration: 5000
     });
     await this.loader.present();
+  }
+  loadend() {
+    if (this.loader) {
+      this.loader.dismiss();
+    } else {
+      setTimeout(() => { this.loader.dismiss(); }, 500)
+    }
   }
   async confirm(header: string, msg: string) {
     const confirm = await this.confirmController.create({

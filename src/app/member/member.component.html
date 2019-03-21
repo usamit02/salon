@@ -9,21 +9,27 @@
 <ion-content>
   <ion-img [src]="member.avatar"></ion-img>
   <ion-list>
-    <ion-item *ngIf="data.room.id<1000000000" button="true" (click)="mention()">
-      <span>メンションする</span>
-    </ion-item>
-    <ion-item *ngIf="data.room.id<10000000000" button="true" (click)="mail()">
-      <span>ダイレクトメール</span>
-    </ion-item>
     <ion-item button="true" (click)="detail()">
       <span>詳細を見る</span>
     </ion-item>
-    <ion-item *ngIf="(data.room.plan || data.room.applyplan) && data.room.auth >=200 && member.auth <= data.room.auth"
-      button="true" (click)="kick()" color="warning">
-      <span>Kick！</span>
-    </ion-item>
-    <ion-item *ngIf="data.room.auth >=200 && member.auth <= data.room.auth" button="true" color="danger" (click)="ban()">
-      <span>BAN！</span>
-    </ion-item>
+    <ng-container *ngIf="data.user.id">
+      <ion-item *ngIf="data.room.id<1000000000" button="true" (click)="mention()">
+        <span>メンション</span>
+      </ion-item>
+      <ion-item *ngIf="data.room.id<10000000000" button="true" (click)="direct()">
+        <span>ダイレクト</span>
+      </ion-item>
+      <ion-item button="true" (click)="blocking()" color="warning">
+        <span *ngIf="block">通知ブロック解除</span>
+        <span *ngIf="!block">通知ブロック</span>
+      </ion-item>
+      <ion-item *ngIf="(data.room.plan || data.room.applyplan) && data.room.auth >=200 && member.auth <= data.room.auth"
+        button="true" (click)="kick()" color="warning">
+        <span>Kick！</span>
+      </ion-item>
+      <ion-item *ngIf="data.room.auth >=200 && member.auth <= data.room.auth" button="true" color="danger" (click)="ban()">
+        <span>BAN！</span>
+      </ion-item>
+    </ng-container>
   </ion-list>
 </ion-content>

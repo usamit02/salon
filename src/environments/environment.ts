@@ -21,7 +21,7 @@ export const tinyinit = {
   selector: ".tiny",
   menubar: false,
   inline: true,
-  theme: 'inlite',
+  //theme: 'inlite',
   mobile: {
     theme: 'mobile',
     plugins: ['autosave', 'lists', 'autolink'],

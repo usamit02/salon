@@ -34,15 +34,27 @@
   <ion-toolbar no-padding>
     <ion-item *ngIf="!data.user.id" button="true" (click)="login()">
       ログインしてコミュニケーションを楽しもう
-      <ion-icon name="logo-twitter"></ion-icon>
+      <ion-icon color="secondary" name="logo-twitter"></ion-icon>
       <ion-icon name="logo-facebook"></ion-icon>
-      <ion-icon name="logo-google"></ion-icon>
+      <ion-icon color="danger" name="logo-google"></ion-icon>
     </ion-item>
     <div [class.none]="!data.user.id||!data.room.chat">
       <ion-item no-padding>
+        <ion-button clear icon-only (click)="addClick()">
+          <ion-icon color="light" name="add-circle"></ion-icon>
+        </ion-button>
+        <ion-buttons *ngIf="add">
+          <ion-button clear icon-only (click)="image()">
+            <ion-icon color="secondary" name="image"></ion-icon>
+          </ion-button>
+          <input type="file" value="ファイルを選択" (change)="fileup($event)">
+          <ion-button clear icon-only (click)="youtube()">
+            <ion-icon color="danger" name="logo-youtube"></ion-icon>
+          </ion-button>
+        </ion-buttons>
         <div class="tiny"></div>
         <ion-button clear icon-only item-right (click)="sendMsg()">
-          <ion-icon name="ios-send" ios="ios-send" md="md-send"></ion-icon>
+          <ion-icon name="ios-send"></ion-icon>
         </ion-button>
       </ion-item>
       <p id="writer">{{writer}}</p>

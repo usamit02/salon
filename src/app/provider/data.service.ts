@@ -19,7 +19,7 @@ export class DataService {
   mentions = {};
   mentionRooms: Array<any> = [];
   mentionRoomsSubject = new Subject<Array<any>>();
-  mailUser: User;
+  directUser: User;
   constructor(private php: PhpService, ) { }
   login(user) {
     if (this.user.id !== user.uid) {
@@ -94,7 +94,7 @@ export class User {
   no?: number = 0;
   upd?: Date;
   rev?: Date;
-  mail?: string;
+  direct?: string;
 }
 export class Room {
   id: number = 2;

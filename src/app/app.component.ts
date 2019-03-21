@@ -8,6 +8,8 @@ import { Router } from '@angular/router';
 //import { Socket } from 'ngx-socket-io';
 import { MemberComponent } from './member/member.component';
 import { AngularFirestore } from '@angular/fire/firestore';
+import { UiService } from './provider/ui.service';
+import { ComponentFactoryBoundToModule } from '@angular/core/src/linker/component_factory_resolver';
 const FOLDER = { id: 1, na: "ブロガーズギルド", parent: 1, folder: true };
 @Component({
   selector: 'app-root',
@@ -27,7 +29,7 @@ export class AppComponent {
   constructor(
     private platform: Platform, private splashScreen: SplashScreen, private statusBar: StatusBar,
     private data: DataService, private php: PhpService, private router: Router,
-    public pop: PopoverController, private db: AngularFirestore,
+    public pop: PopoverController, private db: AngularFirestore, private ui: UiService,
   ) {
     this.platform.ready().then(() => {
       this.statusBar.styleDefault();
@@ -65,27 +67,32 @@ export class AppComponent {
   joinRoom(room: Room) {
     if (room.folder) {
       this.rooms = this.allRooms.filter(r => r.parent === room.id);
+      this.newChat();
       this.folder = room;
     }
-    if (room.id > 1000000000) {
-      this.data.mailUser = { id: room.uid, na: room.na, avatar: "" }
+    this.data.directUser = room.id > 1000000000 ? { id: room.uid, na: room.na, avatar: "" } : { id: "", na: "", avatar: "" };
+    if (room.id > 0) {
+      this.router.navigate(['/home/room', room.id]);
+    } else if (room.id === -101) {
+      this.router.navigate(['/notify']);
     }
-    this.router.navigate(['/home/room', room.id]);
   }
   retRoom(home?: boolean) {
     if (this.folder.id === 1 && this.data.user.id) {
       this.bookmk = !this.bookmk;
-    }
-    if (this.bookmk) {
-      this.rooms = this.allRooms.filter(room => room.bookmark);
     } else {
-      if (home) {
-        this.folder = FOLDER;
+      if (this.bookmk) {
+        this.rooms = this.allRooms.filter(room => room.bookmark);
       } else {
-        let folder = this.allRooms.filter(room => room.id === this.folder.parent);
-        this.folder = folder.length ? folder[0] : FOLDER;
+        if (home) {//長押し
+          this.folder = FOLDER;
+        } else {
+          let folder = this.allRooms.filter(room => room.id === this.folder.parent);
+          this.folder = folder.length ? folder[0] : FOLDER;
+        }
+        this.rooms = this.allRooms.filter(room => room.parent === this.folder.id);
       }
-      this.rooms = this.allRooms.filter(room => room.parent === this.folder.id);
+      this.newChat();
     }
   }
   newChat() {
@@ -93,48 +100,52 @@ export class AppComponent {
     for (let i = 0; i < this.rooms.length; i++) {
       rids.push(this.rooms[i].id);
     }
-    this.php.get('room', { uid: this.data.user.id, rids: JSON.stringify(rids) }).subscribe((res: any) => {
-      for (let i = 0; i < this.rooms.length; i++) {
-        if (this.rooms[i].id in res) {
-          let rooms = this.rooms;
-          let ddd = this.rooms[i].upd;
-          let d = this.rooms[i].upd.getTime();
-          let dddd = Math.floor(this.rooms[i].upd.getTime() / 1000);
-          let dd = new Date(this.rooms[i].upd);
-          let e = new Date(res[this.rooms[i].id].csd);
-
-          let room = new Date(this.rooms[i].upd).getTime();
-          let cursor = new Date(res[this.rooms[i].id].csd).getTime() / 1000;
-          let n = dddd > cursor;
-          this.rooms[i].new = Math.floor(this.rooms[i].upd.getTime() / 1000) > new Date(res[this.rooms[i].id].csd).getTime() / 1000;
+    if (rids.length) {
+      this.php.get('room', { uid: this.data.user.id, rids: JSON.stringify(rids) }).subscribe((res: any) => {
+        for (let i = 0; i < this.rooms.length; i++) {
+          if (this.rooms[i].id in res) {
+            let r = res[this.rooms[i].id];
+            let upd = 'upd' in r ? new Date(r.upd).getTime() / 1000 : Math.floor(this.rooms[i].upd.getTime() / 1000);
+            this.rooms[i].new = upd > new Date(r.csd).getTime() / 1000;
+          }
         }
-      }
-    });
+      });
+    }
   }
   mention() {
     this.folder = { id: -2, na: "メンション", parent: 1 };
     this.rooms = this.data.mentionRooms;
   }
-  mail() {
+  direct() {
+    this.ui.loading();
     this.folder = { id: -1, na: "ダイレクトメール", parent: 1 };
-    this.db.collection("mail", ref => ref.where('uid_old', '==', this.data.user.id)).get().subscribe(query => {
+    this.db.collection("direct", ref => ref.where('uid_old', '==', this.data.user.id)).get().subscribe(query => {
       let rooms = [];
       query.forEach(doc => {
         let d = doc.data();
         rooms.push({ id: Number(doc.id), na: d.na_new, parent: -1, upd: d.upd.toDate(), uid: d.uid_new });
       });
-      this.db.collection("mail", ref => ref.where('uid_new', '==', this.data.user.id)).get().subscribe(query => {
+      this.db.collection("direct", ref => ref.where('uid_new', '==', this.data.user.id)).get().subscribe(query => {
         query.forEach(doc => {
           let d = doc.data();
           rooms.push({ id: Number(doc.id), na: d.na_old, parent: -1, upd: d.upd.toDate(), uid: d.uid_old });
         });
+        rooms.sort((a, b) => {
+          if (a.upd.getTime() > b.upd.getTime()) return -1;
+          if (a.upd.getTime() < b.upd.getTime()) return 1;
+          return 0;
+        });
         this.rooms = rooms;
+        this.ui.loadend();
         this.newChat();
       });
     });
   }
   config() {
     this.folder = { id: -3, na: "設定", parent: 1 };
+    this.rooms = [
+      { id: -101, na: "通知", parent: -3 }, { id: -102, na: "自己紹介", parent: -3 }
+    ]
   }
   searchMember() {
     if (!this.member.trim()) return;

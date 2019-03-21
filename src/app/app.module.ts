@@ -22,8 +22,9 @@ import { MainComponent } from './main/main.component';
 import { MemberComponent } from './member/member.component';
 import { SafePipe } from './pipe/safe.pipe';
 import { StoryComponent } from './story/story.component';
+import { NotifyComponent } from './notify/notify.component';
 @NgModule({
-  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, StoryComponent],
+  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, StoryComponent, NotifyComponent],
   entryComponents: [MemberComponent],
   imports: [
     BrowserModule,
