@@ -36,6 +36,7 @@ export const tinyinit = {
   forced_root_block: false, allow_conditional_comments: true, allow_html_in_named_anchor: true, allow_unsafe_link_target: true,
   setup: editor => {
     editor.on('Change', e => {
+
       console.log('editer change' + e);
     });
   }

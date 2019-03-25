@@ -17,8 +17,8 @@
         </ion-avatar>
       </ion-item>
       <div><span class="chatna">{{chat.na}}</span>
-        <span class="chatdate"> {{chat.upd.toDate() | date:'short'}}</span>
-        <span class="chatdate" *ngIf="chat.rev"> {{chat.rev.toDate() | date:'short'}}修正</span>
+        <span class="chatdate"> {{chat.upd.toDate()|chatdate}}</span>
+        <span class="chatdate" *ngIf="chat.rev"> {{chat.rev.toDate()|chatdate}}修正</span>
         <span *ngIf="chat.uid === data.user.id || data.room.auth >=200" slot="end">
           <ion-button slot="icon-only" (click)="edit($event)" color="light">
             <ion-icon name="brush"></ion-icon>
@@ -27,7 +27,8 @@
             <ion-icon name="trash"></ion-icon>
           </ion-button>
         </span>
-        <div class="chattxt" [innerHtml]="chat.txt | safe: 'html'"></div>
+        <div class="chattxt" [innerHtml]="chat.txt|safe:'html'"></div>
+        <ion-img *ngIf="chat.img" [src]="chat.img|media:'img'" (click)="imgClick(chat.img)"></ion-img>
       </div>
     </ion-item>
   </ion-list>

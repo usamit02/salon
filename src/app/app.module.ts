@@ -13,6 +13,7 @@ import { socketConfig, firebaseConfig } from '../environments/environment';
 import { AngularFireModule } from 'angularfire2';
 import { AngularFireAuthModule } from 'angularfire2/auth';
 import { AngularFirestoreModule } from '@angular/fire/firestore';
+import { AngularFireStorageModule } from 'angularfire2/storage';
 import { FormsModule } from '@angular/forms';
 import { PhpService } from './provider/php.service';
 import { DataService } from './provider/data.service';
@@ -21,11 +22,14 @@ import { RoomComponent } from './room/room.component';
 import { MainComponent } from './main/main.component';
 import { MemberComponent } from './member/member.component';
 import { SafePipe } from './pipe/safe.pipe';
+import { MediaPipe } from './pipe/media.pipe';
+import { ChatdatePipe } from './pipe/chatdate.pipe';
 import { StoryComponent } from './story/story.component';
 import { NotifyComponent } from './notify/notify.component';
+import { ImgComponent } from './img/img.component';
 @NgModule({
-  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, StoryComponent, NotifyComponent],
-  entryComponents: [MemberComponent],
+  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, MediaPipe, ChatdatePipe, StoryComponent, NotifyComponent, ImgComponent],
+  entryComponents: [MemberComponent, ImgComponent],
   imports: [
     BrowserModule,
     IonicModule.forRoot(),
@@ -35,9 +39,11 @@ import { NotifyComponent } from './notify/notify.component';
     AngularFireModule.initializeApp(firebaseConfig),
     AngularFireAuthModule,
     AngularFirestoreModule,
+    AngularFireStorageModule,
     FormsModule,
     MentionModule,
   ],
+  exports: [ImgComponent],
   providers: [
     StatusBar,
     SplashScreen,

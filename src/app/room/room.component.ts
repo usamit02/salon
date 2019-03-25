@@ -1,11 +1,13 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { IonContent, IonInfiniteScroll } from '@ionic/angular';
+import { IonContent, IonInfiniteScroll, ModalController } from '@ionic/angular';
 import { ActivatedRoute } from '@angular/router';
 import { Room, User, DataService } from '../provider/data.service';
 import { AngularFirestore } from '@angular/fire/firestore';
+import { AngularFireStorage } from 'angularfire2/storage';
 import { Subscription } from 'rxjs';
 import { PhpService } from '../provider/php.service';
 import { tinyinit } from '../../environments/environment';
+import { ImgComponent } from '../img/img.component';
 declare var $; declare var tinymce;
 @Component({
   selector: 'app-room',
@@ -17,6 +19,7 @@ export class RoomComponent implements OnInit {
   @ViewChild('top') top: IonInfiniteScroll; @ViewChild('btm') btm: IonInfiniteScroll;
   chats = [];
   chatsUsers: Array<User> = [];
+  chatsUser: User;
   dbcon;
   topMsg: string = ""; btmMsg: string = "";
   readed: boolean;
@@ -28,7 +31,7 @@ export class RoomComponent implements OnInit {
   currentY: number = 0;
   mentionRoomsSb: Subscription; mentionDbSb: Subscription; chatSb: Subscription; paramsSb: Subscription; userSb: Subscription;
   constructor(private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
-    , private php: PhpService) { }
+    , private php: PhpService, private storage: AngularFireStorage, private modal: ModalController) { }
   ngOnInit() {
     this.paramsSb = this.route.params.subscribe(params => {
       if (params.id === undefined) {
@@ -157,10 +160,10 @@ export class RoomComponent implements OnInit {
     } else {
       db = this.dbcon.collection('chat', ref => ref.where('upd', ">", cursor).orderBy('upd', 'asc').limit(20));
     }
-    this.chatsUsers.unshift(this.data.user);//ログイン切り替え対策用
+    this.chatsUsers.unshift(this.data.user);//ログイン切り替え対策用 不完全
     db.get().subscribe(query => {
       let chatsUser = this.chatsUsers.pop();//前回読み込んだユーザー
-      if (chatsUser.id !== this.data.user.id) return;//現在読み込まれているchatsが別のログインユーザーの場合、追加読込しない
+      if (chatsUser.id !== this.data.user.id) { return; }//現在読み込まれているchatsが別のログインユーザーの場合、追加読込しない
       let docs1 = docsPush(query, this);
       let limit = direction === 'btm' && !this.chats.length && docs1.length < 20 ? 20 - docs1.length : 0;
       if (!limit) { limit = 1; cursor = new Date("1/1/1900"); }
@@ -173,6 +176,7 @@ export class RoomComponent implements OnInit {
           this.chats.push(...docs2);
           this.chats.unshift(...docs1.reverse());
         }
+        let a = this.chats;
         let docs = docs1.concat(docs2);
         if (docs.length && this.chats.length === docs.length) {
           setTimeout(() => {
@@ -348,6 +352,11 @@ export class RoomComponent implements OnInit {
     }
     this.dbcon.collection('chat', ref => ref.where('upd', "==", upd)).get().subscribe(query => {
       if (query.docs.length) {
+        let doc = query.docs[0].data();
+        if (doc.img) {
+          this.storage.ref("room/" + this.data.room.id + "/" + doc.img).delete();
+          this.storage.ref("room/" + this.data.room.id + "/org/" + doc.img).delete();
+        }
         this.dbcon.collection('chat').doc(query.docs[0].id).delete();
         this.chats = this.chats.filter(chat => chat.upd.toDate().getTime() !== upd.getTime());
       } else {
@@ -370,6 +379,16 @@ export class RoomComponent implements OnInit {
         });
       }
     });
+  }
+  imgClick(img) {
+    this.imgModal(img);
+  }
+  async imgModal(img) {
+    const m = await this.modal.create({
+      component: ImgComponent,
+      componentProps: { url: img }
+    });
+    return await m.present();
   }
   ngOnDestroy() {
     if (this.userSb) this.userSb.unsubscribe();
