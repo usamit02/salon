@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { IonContent, IonInfiniteScroll, ModalController } from '@ionic/angular';
+import { IonContent, IonInfiniteScroll } from '@ionic/angular';
 import { ActivatedRoute } from '@angular/router';
 import { Room, User, DataService } from '../provider/data.service';
 import { AngularFirestore } from '@angular/fire/firestore';
@@ -7,8 +7,7 @@ import { AngularFireStorage } from 'angularfire2/storage';
 import { Subscription } from 'rxjs';
 import { PhpService } from '../provider/php.service';
 import { tinyinit } from '../../environments/environment';
-import { ImgComponent } from '../img/img.component';
-declare var $; declare var tinymce;
+declare var $; declare var tinymce; declare var twttr;
 @Component({
   selector: 'app-room',
   templateUrl: './room.component.html',
@@ -29,9 +28,10 @@ export class RoomComponent implements OnInit {
   newUpds = [];
   mentionTop: number = 0; mentionBtm: number = 0;
   currentY: number = 0;
+  twitter: boolean = false;
   mentionRoomsSb: Subscription; mentionDbSb: Subscription; chatSb: Subscription; paramsSb: Subscription; userSb: Subscription;
   constructor(private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
-    , private php: PhpService, private storage: AngularFireStorage, private modal: ModalController) { }
+    , private php: PhpService, private storage: AngularFireStorage) { }
   ngOnInit() {
     this.paramsSb = this.route.params.subscribe(params => {
       if (params.id === undefined) {
@@ -109,13 +109,13 @@ export class RoomComponent implements OnInit {
     if (room[0].chat) this.chatInit();
   }
   chatInit(direct?: string) {
-    this.chats = []; this.currentY = 0; this.readed = false; this.newUpds = [];
+    this.chats = []; this.currentY = 0; this.readed = false; this.twitter = false; this.newUpds = [];
     this.top.disabled = true; this.btm.disabled = true;
     this.dbcon = direct ? this.db.collection('direct').doc(direct) : this.db.collection('room').doc(this.data.room.id.toString());
     this.chatLoad(false, this.data.room.csd ? "btm" : "top");
     if (this.chatSb) this.chatSb.unsubscribe();
     this.chatSb = this.dbcon.collection('chat', ref => ref.where('upd', '>', new Date())).valueChanges().
-      subscribe(data => {        //チャットロード以降の書き込み   
+      subscribe(data => {//チャットロード以降の書き込み   
         if (!data.length) return;
         this.dbcon.collection('chat', ref => ref.where('upd', "<", data[data.length - 1].upd).orderBy('upd', 'desc').
           limit(1)).get().subscribe(query => {//書き込み直前のチャットを取得
@@ -140,6 +140,11 @@ export class RoomComponent implements OnInit {
             } else {//初回書き込み
               this.chats.unshift(data[data.length - 1]);
             }
+            if (data[data.length - 1].twitter) {
+              setTimeout(() => {
+                twttr.widgets.load();
+              }, 3000);
+            };
           });
       });
     setTimeout(() => {
@@ -206,6 +211,10 @@ export class RoomComponent implements OnInit {
             }
             setTimeout(() => {
               this.top.disabled = false; this.btm.disabled = false;
+              if (this.twitter) {
+                twttr.widgets.load();
+                this.twitter = false;
+              }
             }, 3000);
           }, 1000);
         }
@@ -224,6 +233,7 @@ export class RoomComponent implements OnInit {
           d.readed = true;
           that.readed = true;
         };
+        if (d.twitter) that.twitter = true;
         docs.push(d);
       });
       return docs;
@@ -379,16 +389,6 @@ export class RoomComponent implements OnInit {
         });
       }
     });
-  }
-  imgClick(img) {
-    this.imgModal(img);
-  }
-  async imgModal(img) {
-    const m = await this.modal.create({
-      component: ImgComponent,
-      componentProps: { url: img }
-    });
-    return await m.present();
   }
   ngOnDestroy() {
     if (this.userSb) this.userSb.unsubscribe();

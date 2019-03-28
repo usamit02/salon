@@ -11,7 +11,7 @@ const routes: Routes = [
     children: [{ path: 'room/:id', component: RoomComponent }]
   },
   //{ path: 'home/:id', loadChildren: './home/home.module#HomePageModule' },
-  { path: 'notify', component: NotifyComponent }
+  { path: 'notify', component: NotifyComponent },
 ];
 
 @NgModule({

@@ -7,6 +7,7 @@ import { AngularFireStorage } from 'angularfire2/storage';
 import { DataService } from '../provider/data.service';
 import { PhpService } from '../provider/php.service';
 import { Observable } from 'rxjs';
+import { UiService } from '../provider/ui.service';
 declare var tinymce;
 @Component({
   selector: 'app-main',
@@ -16,14 +17,15 @@ declare var tinymce;
 export class MainComponent {
   writer: string;
   message: string;
-  add: boolean = false;
+  mediaButton = { add: false, img: false, url: false };
   addcolor: string = "light";
-  img: File;
+  media = new Media;
   uploadPercent: Observable<number>;
   sendable: boolean = false;
   constructor(
     private data: DataService, private afAuth: AngularFireAuth, private db: AngularFirestore,
-    private actionSheetCtrl: ActionSheetController, private php: PhpService, private storage: AngularFireStorage
+    private actionSheetCtrl: ActionSheetController, private php: PhpService, private storage: AngularFireStorage,
+    private ui: UiService
   ) { }
   ngOnInit() {
     this.data.mentionSubject.asObservable().subscribe((member: any) => {
@@ -124,7 +126,8 @@ export class MainComponent {
   send() {
     this.sendable = false;
     var upd = new Date();
-    if (this.img && this.img.type.match(/image.*/)) {
+    if (this.media.img && this.media.img.type.match(/image.*/)) {
+      this.ui.pop("アップロードしています・・・");
       var that = this;
       const canvas = document.querySelector('canvas');
       const ctx = canvas.getContext('2d');
@@ -155,7 +158,7 @@ export class MainComponent {
         }
         img.src = <string>reader.result;
       }
-      reader.readAsDataURL(this.img);
+      reader.readAsDataURL(this.media.img);
     } else {
       this.chatAdd(upd);
     }
@@ -171,7 +174,7 @@ export class MainComponent {
         alert("ファイルアップロードに失敗しました。\r\n" + err.message);
       }).then(ref => {
         that.chatAdd(upd);
-        that.add = false;
+        that.mediaButton.add = false;
         that.addcolor = "light";
         that.uploadPercent = null;
       });
@@ -180,14 +183,21 @@ export class MainComponent {
   chatAdd(upd) {
     let ed = tinymce.activeEditor;
     let txt = ed.getContent({ format: 'html' });
-    if (!txt && !this.img) return;
+    let a = this.media.isnull();
+    if (!txt && this.media.isnull()) return;
     let uid = this.data.user.id, na = this.data.user.na, rid = this.data.room.id;
     let collection = rid > 1000000000 ? 'direct' : 'room';
     let add: any = { uid: uid, na: na, avatar: this.data.user.avatar, txt: txt, upd: upd };
-    if (this.img) {
+    if (this.media.img) {
       add.img = Math.floor(upd.getTime() / 1000) + ".jpg";
-      this.img = null;
     }
+    if (this.media.youtube) {
+      add.youtube = this.media.youtube;
+    }
+    if (this.media.twitter) {
+      add.twitter = this.media.twitter;
+    }
+    this.media = new Media();
     this.db.collection(collection).doc(rid.toString()).collection('chat').add(add).catch(err => { alert("チャット書込みに失敗しました。\r\n" + err); }).then(ref => {
       if (collection === 'direct') {
         this.db.collection('direct').doc(rid.toString()).set({ upd: upd }, { merge: true }).then(() => {
@@ -221,21 +231,53 @@ export class MainComponent {
     );
   }
   addClick() {
-    this.add = !this.add;
+    this.mediaButton.add = !this.mediaButton.add;
   }
   fileup(e) {
-    this.img = e.target.files[0];
+    this.media.img = e.target.files[0];
     this.addcolor = "primary";
   }
-  media() {
-
+  urlClick(e) {
+    let url = e.target.value;
+    if (url.indexOf("twitter.com") > 0) {
+      url = url.match("twitter.com/[0-9a-zA-Z_]{1,15}/status(?:es)?/[0-9]{19}");
+      if (url && url.length) {
+        this.media.twitter = url[0];
+      } else {
+        this.ui.alert("twitterのurlを解析できませんでした。");
+      }
+    } else if (url.indexOf("youtu.be") > 0 || url.indexOf("youtube.com") > 0) {
+      let id = url.match('[\/?=]([a-zA-Z0-9\-_]{11})');
+      if (id && id.length) {
+        this.media.youtube = id[1];
+      } else {
+        this.ui.alert("youtubeのurlを解析できませんでした。");
+      }
+    }
+  }
+  youtubePress() {
+    window.open("https://www.youtube.com/?gl=JP&hl=ja");
+  }
+  twitterPress() {
+    window.open("https://twitter.com/");
   }
   ngOnDestroy() {
     this.data.userSubject.unsubscribe();
     this.data.roomSubject.unsubscribe();
   }
 }
-
+class Media {
+  public img: File = null;
+  public twitter: string = "";
+  public youtube: string = "";
+  isnull(): boolean {
+    if (this.img || this.twitter || this.youtube) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+}
 /*
  sendMsg2() {
     var upd = new Date();

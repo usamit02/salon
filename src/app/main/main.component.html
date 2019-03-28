@@ -44,17 +44,24 @@
           <ion-progress-bar [value]="percent/100"></ion-progress-bar>{{percent|number:'1.0-0'}}%
         </ng-container>
         <ng-template #sendbox>
-          <ion-button [color]="addcolor" (click)="addClick()">
+          <ion-button [color]="addcolor" (click)="mediaButton.add=!mediaButton.add" (press)="mediaCancel()">
             <ion-icon name="add-circle"></ion-icon>
           </ion-button>
-          <ion-buttons *ngIf="add">
-            <input id="upimg" type="file" capture="camera" (change)="fileup($event)" />
-            <ion-button clear icon-only (click)="twitter()">
+          <ion-buttons *ngIf="mediaButton.add">
+            <ion-button clear icon-only (click)="mediaButton.img=!mediaButton.img">
+              <ion-icon color="success" name="image"></ion-icon>
+            </ion-button>
+            <input *ngIf="mediaButton.img" id="upimg" type="file" accept="image/*" capture="camera" (change)="fileup($event)" />
+            <ion-button clear icon-only (click)="mediaButton.url=!mediaButton.url" (press)="twitterPress()">
               <ion-icon color="secondary" name="logo-twitter"></ion-icon>
             </ion-button>
-            <ion-button clear icon-only (click)="youtube()">
+            <ion-button clear icon-only (click)="mediaButton.url=!mediaButton.url" (press)="youtubePress()">
               <ion-icon color="danger" name="logo-youtube"></ion-icon>
             </ion-button>
+            <ng-container *ngIf="mediaButton.url">
+              <input class="url" type="text" placeholder="youtubeやtwitterなどのurl" (change)="urlClick($event)">
+              <button (click)="urlClick($event)">適用</button>
+            </ng-container>
           </ion-buttons>
           <div class="tiny"></div>
           <ion-button [disabled]="!sendable" (click)="send()">

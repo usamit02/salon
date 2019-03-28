@@ -28,7 +28,14 @@
           </ion-button>
         </span>
         <div class="chattxt" [innerHtml]="chat.txt|safe:'html'"></div>
-        <ion-img *ngIf="chat.img" [src]="chat.img|media:'img'" (click)="imgClick(chat.img)"></ion-img>
+        <a *ngIf="chat.img" [href]="chat.img|media:'imgorg'" target="_blank">
+          <ion-img [src]="chat.img|media:'img'"></ion-img>
+        </a>
+        <a *ngIf="chat.youtube" [href]="chat.youtube|media:'youtube'" target="_blank">
+          <ion-img [src]="chat.youtube|media:'youtubeimg'"></ion-img>
+        </a>
+        <div *ngIf="chat.twitter" [innerHTML]="chat.twitter|media:'twitter'|safe:'html'">
+        </div>
       </div>
     </ion-item>
   </ion-list>

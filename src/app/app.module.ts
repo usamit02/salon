@@ -26,10 +26,9 @@ import { MediaPipe } from './pipe/media.pipe';
 import { ChatdatePipe } from './pipe/chatdate.pipe';
 import { StoryComponent } from './story/story.component';
 import { NotifyComponent } from './notify/notify.component';
-import { ImgComponent } from './img/img.component';
 @NgModule({
-  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, MediaPipe, ChatdatePipe, StoryComponent, NotifyComponent, ImgComponent],
-  entryComponents: [MemberComponent, ImgComponent],
+  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, MediaPipe, ChatdatePipe, StoryComponent, NotifyComponent],
+  entryComponents: [MemberComponent],
   imports: [
     BrowserModule,
     IonicModule.forRoot(),
@@ -43,7 +42,6 @@ import { ImgComponent } from './img/img.component';
     FormsModule,
     MentionModule,
   ],
-  exports: [ImgComponent],
   providers: [
     StatusBar,
     SplashScreen,
