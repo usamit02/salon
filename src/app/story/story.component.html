@@ -1,18 +1,17 @@
-<ng-container *ngIf="!payMode">
+<ng-container *ngIf="payid===0">
   <ion-item *ngIf="room.lock===1" color="warning" text-center align-items-center>
     <span>入会審査中です。もうしばらくお待ちください。</span>
   </ion-item>
   <div class="row" *ngFor="let story of storys">
     <div class="txt" [innerHtml]="story.txt | safe: 'html'"></div>
     <div class="media" [innerHtml]="story.media | safe: 'html'"></div>
-    <div *ngIf="story.pay>0" style="width:100%;" text-center align-items-center>
-      <ion-button round large (click)="pay()">
-        {{story.pay}}円で続きを見る
-      </ion-button>
+    <div *ngIf="story.pay>0" text-center align-items-center>
+      <ion-button (click)="goPayMode(story.id)" color="success">{{story.pay}}円で続きを見る</ion-button>
     </div>
+    {{story.id}}
   </div>
   <div *ngIf="room.lock>9" style="width:100%;" text-center align-items-center>
-    <ion-button round large (click)="goPayMode()">
+    <ion-button color="success" (click)="goPayMode(-1)">
       このサロンに加入する
     </ion-button>
   </div>
@@ -22,19 +21,21 @@
     </ion-button>
   </div>
 </ng-container>
-<ng-container *ngIf="payMode">
-  <h2>加入にあたって</h2>
-  <h2>注意事項</h2>
-  <h2>返金について</h2>
-  <h2>プライバシーポリシー</h2>
-  <h2>月額：{{plan.amount}}円（毎月{{plan.billing_day}}日払い）</h2>
-  <p *ngIf="plan.trial_days">無料お試し期間:{{plan.trial_days}}日間</p>
+<ng-container *ngIf="payid">
+  <ng-container *ngIf="payid===-1">
+    <h2>加入にあたって</h2>
+    <h2>注意事項</h2>
+    <h2>返金について</h2>
+    <h2>プライバシーポリシー</h2>
+    <h2>月額：{{plan.amount}}円（毎月{{plan.billing_day}}日払い）</h2>
+    <p *ngIf="plan.trial_days">無料お試し期間:{{plan.trial_days}}日間</p>
+  </ng-container>
   <div *ngIf="card.last4">
     <p>登録済クレジットカード</p>
     　 <p>カード番号　　{{card.brand}} ****-****-****-{{card.last4}}</p>
     <p>有効期間　　　{{card.exp_year}}年{{card.exp_month}}月</p>
     <ion-item text-center align-items-center>
-      <ion-button round large (click)="pay('')">同意して申し込む</ion-button>
+      <ion-button color="success" (click)="pay('')">同意して申し込む</ion-button>
       <ion-button *ngIf="!card.change" color="light" (click)="card.change=true">クレジットカードを変更する</ion-button>
     </ion-item>
   </div>
@@ -59,11 +60,12 @@
         </ion-select>
       </ion-item>
       <div text-center align-items-center>
-        <ion-button round large type="submit">同意して申し込む</ion-button>
+        <ion-button color="success" type="submit">同意して申し込む</ion-button>
       </div>
     </ion-list>
   </form>
-
-
-  <p *ngIf="plan.auth_days">※審査により加入できない場合があります。{{plan.auth_days}}日以内に加入決定します。</p>
+  <p *ngIf="plan.auth_days && payid===-1">※審査により加入できない場合があります。{{plan.auth_days}}日以内に加入決定します。</p>
+  <div text-center align-items-center>
+    <ion-button color="light" (click)="payid=0">元の画面に戻る</ion-button>
+  </div>
 </ng-container>

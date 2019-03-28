@@ -11,7 +11,7 @@ declare var twttr; declare var Payjp;
 export class StoryComponent implements OnInit {
   storys = [];
   story: string;
-  payMode: boolean = false;
+  payid: number = 0;
   payjp;
   years = ["2019", "2020", "2021", "2022", "2023", "2024"];
   months = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
@@ -26,6 +26,9 @@ export class StoryComponent implements OnInit {
   @Input() user;
   constructor(private php: PhpService, private ui: UiService, private data: DataService) { }
   ngOnInit() {
+    this.storyLoad();
+  }
+  storyLoad() {
     this.php.get("story", { uid: this.user.id, rid: this.room.id }).subscribe((res: any) => {
       this.storys = res.main;
       setTimeout(() => {
@@ -33,18 +36,22 @@ export class StoryComponent implements OnInit {
       });
     });
   }
-  goPayMode() {
+  goPayMode(payid) {
     if (this.data.user.id) {
-      this.payMode = true;
+      this.payid = payid;
       this.ui.loading("読込中...");
       Payjp.setPublicKey("pk_test_12e1f56f9f92414d7b00af63");
-      this.php.get("pay/plan", { uid: this.data.user.id, rid: this.room.id, pid: this.room.plan }).subscribe((res: any) => {
+      let plan: any = { uid: this.data.user.id, rid: this.room.id };
+      if (payid === -1) plan.pid = this.room.plan;
+      this.php.get("pay/plan", plan).subscribe((res: any) => {
         this.ui.loadend();
         if (res.error) {
           this.ui.alert("プランの読込に失敗しました。再読み込みを試してください。\n" + res.error);
         } else {
-          this.plan = res.plan;
-          if (!res.plan.billing_day) this.plan.billing_day = new Date().getDate();
+          if (payid === -1) {
+            this.plan = res.plan;
+            if (!res.plan.billing_day) this.plan.billing_day = new Date().getDate();
+          }
           this.card = res.card;
         }
       });
@@ -54,10 +61,11 @@ export class StoryComponent implements OnInit {
   }
   pay(token: string) {
     this.ui.loading("支払中...");
-    this.php.get("pay/charge", { rid: this.room.id, uid: this.user.id, na: this.user.na, token: token }).subscribe((res: any) => {
+    let charge: any = { rid: this.room.id, uid: this.user.id, na: this.user.na, token: token };
+    if (this.payid > 0) charge.sid = this.payid;
+    this.php.get("pay/charge", charge).subscribe((res: any) => {
       this.ui.loadend();
-      if (res.msg === "ok") {
-        this.payMode = false;
+      if (res.msg === "plan") {//定額課金        
         this.data.readRooms();
         if (res.plan === 0) {
           this.ui.pop('ようこそ「' + this.room.na + "」へ");
@@ -66,9 +74,14 @@ export class StoryComponent implements OnInit {
           this.ui.alert('「' + this.room.na + '」へ加入申込しました。\n審査完了まで最大' + res.plan + '日間お待ちください。');
           this.data.room.lock = 1;
         }
-      } else {
-        this.ui.alert("定額課金の処理に失敗しました。お問い合わせください。\n" + res.error);
+      } else if (res.msg === "charge") {
+        this.ui.pop("支払い完了しました。コンテンツをお楽しみください。");
+        this.storyLoad();
       }
+      else {
+        this.ui.alert("課金処理に失敗しました。お問い合わせください。\n" + res.error);
+      }
+      this.payid = 0;
     });
   }
   newpay(card) {
