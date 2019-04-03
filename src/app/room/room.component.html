@@ -8,26 +8,27 @@
   </ion-infinite-scroll>
   <div><span style="color:lightgrey">{{topMsg}}</span></div>
   <ion-list>
-    <ion-item class="chat" *ngFor="let chat of chats.reverse();index as i" [class.readed]="chat.readed">
-      <span style="display:none;">{{chat.upd.toDate() | date:'MMM d, y, H:mm:ss:SSS'}}</span>
-      <span style="display:none;">{{i}}</span>
-      <ion-item button="true" (click)="popMember($event)">
-        <ion-avatar class="avatar" item-start>
+    <ion-item (click)=chatClick($event) (press)=chatPress($event,chat.uid,chat.na,i) class="chat" *ngFor="let chat of chats.reverse();index as i"
+      [class.readed]="chat.readed">
+      <span class="none">{{chat.upd.toDate() | date:'MMM d, y, H:mm:ss:SSS'}}</span>
+      <ion-item button="true" (click)="popMember($event,chat.uid)">
+        <ion-avatar class="avatar">
           <ion-img [src]="chat.avatar"></ion-img>
         </ion-avatar>
       </ion-item>
       <div><span class="chatna">{{chat.na}}</span>
         <span class="chatdate"> {{chat.upd.toDate()|chatdate}}</span>
         <span class="chatdate" *ngIf="chat.rev"> {{chat.rev.toDate()|chatdate}}修正</span>
-        <span *ngIf="chat.uid === data.user.id || data.room.auth >=200" slot="end">
-          <ion-button slot="icon-only" (click)="edit($event)" color="light">
-            <ion-icon name="brush"></ion-icon>
-          </ion-button>
-          <ion-button slot="icon-only" (click)="delete($event)" color="light">
-            <ion-icon name="trash"></ion-icon>
-          </ion-button>
-        </span>
         <div class="chattxt" [innerHtml]="chat.txt|safe:'html'"></div>
+        <div *ngIf="chat.edit" text-center align-items-center>
+          <ion-button (click)="editSend($event,i)">
+            <ion-icon name="send"></ion-icon>
+          </ion-button>
+        </div>
+        <div *ngIf="chat.emoji">
+          <div class="emoji"></div>
+        </div>
+        <div *ngIf="chat.react" [innerHTML]="chat.react|media:'react'|safe:'html'"></div>
         <a *ngIf="chat.img" [href]="chat.img|media:'imgorg'" target="_blank">
           <ion-img [src]="chat.img|media:'img'"></ion-img>
         </a>
@@ -35,6 +36,10 @@
           <ion-img [src]="chat.youtube|media:'youtubeimg'"></ion-img>
         </a>
         <div *ngIf="chat.twitter" [innerHTML]="chat.twitter|media:'twitter'|safe:'html'">
+        </div>
+        <div *ngIf="chat.html" [innerHTML]="chat.html|safe:'html'">
+        </div>
+        <div *ngIf="chat.card" [innerHTML]="chat.card|media:'card'|safe:'html'">
         </div>
       </div>
     </ion-item>
@@ -47,3 +52,24 @@
 </ion-content>
 <div id="btmmsg" class="msg"><span class="mention" *ngIf="mentionBtm" (click)="noticeClick('mentionBtm')">メンション↓{{mentionBtm}}件</span>
   <span class="newmsg" *ngIf="newUpds.length" (click)="noticeClick('newMsg')">新着メッセージ↓{{newUpds.length}}件</span></div>
+
+<!--
+
+
+      <span style="display:none;">{{i}}</span>
+      
+        <span *ngIf="chat.uid === data.user.id || data.room.auth >=200" slot="end">
+          <ion-button slot="icon-only" (click)="edit($event)" color="light">
+            <ion-icon name="brush"></ion-icon>
+          </ion-button>
+          <ion-button slot="icon-only" (click)="delete($event)" color="light">
+            <ion-icon name="trash"></ion-icon>
+          </ion-button>
+        </span>
+
+
+
+
+
+
+-->

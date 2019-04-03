@@ -3,6 +3,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { MainComponent } from './main/main.component';
 import { RoomComponent } from './room/room.component';
 import { NotifyComponent } from './notify/notify.component';
+import { DetailComponent } from './detail/detail.component';
 const routes: Routes = [
   { path: '', redirectTo: 'home/room/2', pathMatch: 'full' },
   {
@@ -12,6 +13,7 @@ const routes: Routes = [
   },
   //{ path: 'home/:id', loadChildren: './home/home.module#HomePageModule' },
   { path: 'notify', component: NotifyComponent },
+  { path: 'detail/:no', component: DetailComponent },
 ];
 
 @NgModule({

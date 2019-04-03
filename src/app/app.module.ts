@@ -26,8 +26,9 @@ import { MediaPipe } from './pipe/media.pipe';
 import { ChatdatePipe } from './pipe/chatdate.pipe';
 import { StoryComponent } from './story/story.component';
 import { NotifyComponent } from './notify/notify.component';
+import { DetailComponent } from './detail/detail.component';
 @NgModule({
-  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, MediaPipe, ChatdatePipe, StoryComponent, NotifyComponent],
+  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, MediaPipe, ChatdatePipe, StoryComponent, NotifyComponent, DetailComponent,],
   entryComponents: [MemberComponent],
   imports: [
     BrowserModule,

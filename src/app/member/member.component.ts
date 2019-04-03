@@ -20,7 +20,6 @@ export class MemberComponent implements OnInit {
     this.member = this.navParams.get('member');
     let room = this.data.room;
     let member = this.member;
-    let a = 0;
     if (this.data.user.id) {
       this.php.get("member", { uid: this.data.user.id, mid: this.member.id }).subscribe((res: any) => {
         if (!res || res.msg) {
@@ -30,6 +29,10 @@ export class MemberComponent implements OnInit {
         }
       });
     }
+  }
+  detail() {
+    this.router.navigate(['/detail', this.member.no]);
+    this.close();
   }
   mention() {
     this.data.mentionSubject.next(this.member);

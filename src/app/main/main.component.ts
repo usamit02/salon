@@ -51,14 +51,14 @@ export class MainComponent {
       mobile: {
         theme: 'mobile',
         plugins: ['autosave', 'lists', 'autolink'],
-        toolbar: ['undo', 'bold', 'italic', 'styleselect']
+        toolbar: ['undo', 'bold', 'italic', 'styleselect', 'emoticons']
       },
       language_url: 'https://bloggersguild.cf/js/ja.js',
       plugins: [
-        'autolink autosave codesample contextmenu link lists advlist table textcolor paste'
+        'autolink autosave codesample contextmenu link lists advlist table textcolor paste emoticons'
       ],
-      toolbar: 'undo redo | forecolor backcolor | fontselect fontsizeselect styleselect | bullist numlist | blockquote link copy paste',
-      contextmenu: 'up down restoredraft del | inserttable cell row column deletetable | paystart payend',
+      toolbar: 'undo redo | forecolor | emoticons styleselect | blockquote link copy paste',
+      contextmenu: 'restoredraft | inserttable cell row column deletetable | bullist numlist',
       forced_root_block: false, allow_conditional_comments: true, allow_html_in_named_anchor: true, allow_unsafe_link_target: true,
       setup: editor => {
         editor.on('Change', e => {
@@ -138,7 +138,7 @@ export class MainComponent {
         img.onload = () => {
           let w, h;
           for (let i = 0; i < 2; i++) {
-            const px = i ? 1000 : 320;
+            const px = i ? 1000 : 280;
             if (img.width > img.height) {
               w = img.width > px ? px : img.width;//横長
               h = img.height * (w / img.width);
@@ -183,7 +183,6 @@ export class MainComponent {
   chatAdd(upd) {
     let ed = tinymce.activeEditor;
     let txt = ed.getContent({ format: 'html' });
-    let a = this.media.isnull();
     if (!txt && this.media.isnull()) return;
     let uid = this.data.user.id, na = this.data.user.na, rid = this.data.room.id;
     let collection = rid > 1000000000 ? 'direct' : 'room';
@@ -196,6 +195,12 @@ export class MainComponent {
     }
     if (this.media.twitter) {
       add.twitter = this.media.twitter;
+    }
+    if (this.media.html) {
+      add.html = this.media.html;
+    }
+    if (this.media.card) {
+      add.card = this.media.card;
     }
     this.media = new Media();
     this.db.collection(collection).doc(rid.toString()).collection('chat').add(add).catch(err => { alert("チャット書込みに失敗しました。\r\n" + err); }).then(ref => {
@@ -230,11 +235,9 @@ export class MainComponent {
     }
     );
   }
-  addClick() {
-    this.mediaButton.add = !this.mediaButton.add;
-  }
   fileup(e) {
     this.media.img = e.target.files[0];
+    this.sendable = true;
     this.addcolor = "primary";
   }
   urlClick(e) {
@@ -243,6 +246,7 @@ export class MainComponent {
       url = url.match("twitter.com/[0-9a-zA-Z_]{1,15}/status(?:es)?/[0-9]{19}");
       if (url && url.length) {
         this.media.twitter = url[0];
+        this.sendable = true;
       } else {
         this.ui.alert("twitterのurlを解析できませんでした。");
       }
@@ -250,8 +254,28 @@ export class MainComponent {
       let id = url.match('[\/?=]([a-zA-Z0-9\-_]{11})');
       if (id && id.length) {
         this.media.youtube = id[1];
+        this.sendable = true;
       } else {
         this.ui.alert("youtubeのurlを解析できませんでした。");
+      }
+    } else if (url.startsWith("<iframe") && url.endsWith("</iframe>")) {
+      this.media.html = url;
+      this.sendable = true;
+    } else {
+      let match = url.match("https?://[-_.!~*\'()a-zA-Z0-9;/?:@&=+$,%#]+");
+      if (match !== null) {
+        this.sendable = false;
+        this.php.get('linkcard', { url: url }).subscribe((res: any) => {
+          if (res.title || res.image) {
+            res.url = url;
+            this.media.card = res;
+          } else {
+            this.media.html = '<a href="' + url + '" target="_blank">' + url + '</a>';
+          }
+          this.sendable = true;
+        });
+      } else {
+        this.ui.pop("urlを認識できません。");
       }
     }
   }
@@ -270,8 +294,10 @@ class Media {
   public img: File = null;
   public twitter: string = "";
   public youtube: string = "";
+  public html: string = "";
+  public card: any = {};
   isnull(): boolean {
-    if (this.img || this.twitter || this.youtube) {
+    if (this.img || this.twitter || this.youtube || this.html || this.card) {
       return false;
     } else {
       return true;
@@ -294,7 +320,16 @@ this.storage.upload(path, file).then(snapshot => {
       this.storage.ref(path).getDownloadURL().subscribe(url => {
         alert(url);
       });
-
+if (url.indexOf("https://www.google.com/maps/embed?") > 0) {
+        let i = url.indexOf("width=");
+        if (i > 100) {
+          url = url.slice(0, i) + 'width="480" height="120" frameborder="0" style="border:0" allowfullscreen></iframe>';
+          this.media.html = url;
+          this.sendable = true;
+        } else {
+          this.ui.alert("google MAPのurlを解析できませんでした。");
+        }
+      }
 
 
 */

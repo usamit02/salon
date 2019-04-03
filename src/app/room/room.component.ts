@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { IonContent, IonInfiniteScroll } from '@ionic/angular';
+import { IonContent, IonInfiniteScroll, ActionSheetController } from '@ionic/angular';
 import { ActivatedRoute } from '@angular/router';
 import { Room, User, DataService } from '../provider/data.service';
 import { AngularFirestore } from '@angular/fire/firestore';
@@ -18,7 +18,6 @@ export class RoomComponent implements OnInit {
   @ViewChild('top') top: IonInfiniteScroll; @ViewChild('btm') btm: IonInfiniteScroll;
   chats = [];
   chatsUsers: Array<User> = [];
-  chatsUser: User;
   dbcon;
   topMsg: string = ""; btmMsg: string = "";
   readed: boolean;
@@ -29,8 +28,8 @@ export class RoomComponent implements OnInit {
   mentionTop: number = 0; mentionBtm: number = 0;
   currentY: number = 0;
   twitter: boolean = false;
-  mentionRoomsSb: Subscription; mentionDbSb: Subscription; chatSb: Subscription; paramsSb: Subscription; userSb: Subscription;
-  constructor(private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
+  mentionRoomsSb: Subscription; mentionDbSb: Subscription; newchatSb: Subscription; chatSb: Subscription; paramsSb: Subscription; userSb: Subscription;
+  constructor(private actionSheetCtrl: ActionSheetController, private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
     , private php: PhpService, private storage: AngularFireStorage) { }
   ngOnInit() {
     this.paramsSb = this.route.params.subscribe(params => {
@@ -109,12 +108,13 @@ export class RoomComponent implements OnInit {
     if (room[0].chat) this.chatInit();
   }
   chatInit(direct?: string) {
+    this.chatsUsers.unshift(this.data.user);//ログイン切り替え対策用 あやしい
     this.chats = []; this.currentY = 0; this.readed = false; this.twitter = false; this.newUpds = [];
     this.top.disabled = true; this.btm.disabled = true;
     this.dbcon = direct ? this.db.collection('direct').doc(direct) : this.db.collection('room').doc(this.data.room.id.toString());
     this.chatLoad(false, this.data.room.csd ? "btm" : "top");
-    if (this.chatSb) this.chatSb.unsubscribe();
-    this.chatSb = this.dbcon.collection('chat', ref => ref.where('upd', '>', new Date())).valueChanges().
+    if (this.newchatSb) this.newchatSb.unsubscribe();
+    this.newchatSb = this.dbcon.collection('chat', ref => ref.where('upd', '>', new Date())).valueChanges().
       subscribe(data => {//チャットロード以降の書き込み   
         if (!data.length) return;
         this.dbcon.collection('chat', ref => ref.where('upd', "<", data[data.length - 1].upd).orderBy('upd', 'desc').
@@ -122,6 +122,7 @@ export class RoomComponent implements OnInit {
             if (query.docs.length) {//初回書き込みでない
               if (query.docs[0].data().upd.toDate().getTime() === this.chats[0].upd.toDate().getTime()) {
                 this.chats.unshift(data[data.length - 1]);//チャットが連続していれば書き込みを足す（chats[0]が最新、reverse）
+                this.chatChange();
                 setTimeout(() => {
                   let content = <any>document.getElementById('chatscontent');
                   let chats = content.children[2].children;
@@ -165,23 +166,23 @@ export class RoomComponent implements OnInit {
     } else {
       db = this.dbcon.collection('chat', ref => ref.where('upd', ">", cursor).orderBy('upd', 'asc').limit(20));
     }
-    this.chatsUsers.unshift(this.data.user);//ログイン切り替え対策用 不完全
+    //
     db.get().subscribe(query => {
-      let chatsUser = this.chatsUsers.pop();//前回読み込んだユーザー
-      if (chatsUser.id !== this.data.user.id) { return; }//現在読み込まれているchatsが別のログインユーザーの場合、追加読込しない
       let docs1 = docsPush(query, this);
       let limit = direction === 'btm' && !this.chats.length && docs1.length < 20 ? 20 - docs1.length : 0;
       if (!limit) { limit = 1; cursor = new Date("1/1/1900"); }
       db = this.dbcon.collection('chat', ref => ref.where('upd', "<=", cursor).orderBy('upd', 'desc').limit(limit));
       db.get().subscribe(query => {
         let docs2 = docsPush(query, this);
+        let chatsUser = this.chatsUsers.pop();//前回読み込んだユーザー
+        if (chatsUser && chatsUser.id !== this.data.user.id) { return; }//現在読み込まれているchatsが別のログインユーザーの場合、追加読込しない
         if (direction === 'top') {
           this.chats.push(...docs1);
         } else {
           this.chats.push(...docs2);
           this.chats.unshift(...docs1.reverse());
         }
-        let a = this.chats;
+        this.chatChange();
         let docs = docs1.concat(docs2);
         if (docs.length && this.chats.length === docs.length) {
           setTimeout(() => {
@@ -239,6 +240,30 @@ export class RoomComponent implements OnInit {
       return docs;
     }
   }
+  chatChange() {
+    if (this.chatSb) this.chatSb.unsubscribe();
+    this.chatSb = this.dbcon.collection('chat', ref => ref.where('upd', '<=', this.chats[0].upd).
+      where('upd', '>=', this.chats[this.chats.length - 1].upd)).valueChanges().subscribe(data => {//チャットロード以降の変更   
+        let chats = data.reverse();
+        console.log("chats valueChanges");
+        if (chats.length < this.chats.length) {
+          //削除処理を追加予定
+        } else if (chats.length === this.chats.length) {
+          //修正処理を追加予定
+          for (let i = 0; i < chats.length; i++) {
+            if ('react' in chats[i]) {
+              if ('react' in this.chats[i]) {
+                if (Object.keys(this.chats[i].react).length !== Object.keys(chats[i].react).length) {
+                  this.chats[i].react = chats[i].react;
+                }
+              } else {
+                this.chats[i].react = chats[i].react;
+              }
+            }
+          }
+        }
+      });
+  }
   onScroll(e) {
     this.currentY = e.detail.currentY;
   }
@@ -256,8 +281,8 @@ export class RoomComponent implements OnInit {
     }
   }
   currentUpds(contents) {
-    var chats = contents.currentTarget.children[2].children;
-    var upds = [];//見えてるチャットの日付の集合
+    let chats = contents.currentTarget.children[2].children;
+    let upds = [];//見えてるチャットの日付の集合
     for (let i = 0; i < chats.length; i++) {
       if (chats[i].offsetTop >= this.currentY &&
         chats[i].offsetTop + chats[i].offsetHeight < this.currentY + contents.currentTarget.scrollHeight - 30) {
@@ -319,37 +344,111 @@ export class RoomComponent implements OnInit {
       }
     }
   }
-  edit(e) {
-    let item = e.currentTarget.parentElement.parentElement.parentElement;
-    let icon = e.currentTarget.children[0];
-    let div = item.getElementsByClassName("chattxt");
-    if (icon.name === "brush") {
-      div[0].classList.add("tiny");
-      div[0].contentEditable = true;
-      tinymce.init(tinyinit);
-      icon.name = "send";
-    } else {
-      let upd = new Date(item.children[0].innerHTML);
-      this.dbcon.collection('chat', ref => ref.where('upd', "==", upd)).get().subscribe(query => {
-        if (query.docs.length) {
-          let txt = tinymce.activeEditor.getContent({ format: 'html' });
-          this.dbcon.collection('chat').doc(query.docs[0].id).update({
-            rev: new Date(),
-            txt: txt
-          });
-          div[0].classList.remove("tiny");
-          div[0].contentEditable = false;
-          icon.name = "brush";
-        } else {
-          alert('編集(' + upd + ')に失敗しました。');
-        }
-      });
+  chatClick(e) {
+    if (e.target.className === 'react') {
+      let item = e.target.children[0];
+      if (item.style.display === 'none') {
+        item.style.display = 'inline';
+      } else {
+        item.style.display = 'none';
+      }
     }
   }
-  delete(e) {
-    let item = e.currentTarget.parentElement.parentElement.parentElement;
-    let div = item.getElementsByClassName("chattxt");
-    let upd = new Date(item.children[0].innerHTML);
+  async chatPress(e, uid, na, idx) {
+    let buttons: Array<any> = [{ text: 'リアクション', icon: 'happy', handler: () => { this.emoji(e, idx); } }]
+    if (uid === this.data.user.id || this.data.room.auth > 200) {
+      if (e.target.className === 'chattxt') {
+        buttons.push(
+          { text: '編集', icon: 'brush', handler: () => { this.edit(e, idx); } }
+        );
+      }
+      buttons.push(
+        { text: '削除', icon: 'trash', handler: () => { this.delete(e, idx); } }
+      );
+    }
+    buttons.push({ text: '戻る', icon: 'exit', role: 'cancel' })
+    const actionSheet = await this.actionSheetCtrl.create({ header: na, buttons: buttons });
+    await actionSheet.present();
+  }
+  emoji(e, idx) {
+    let chats = this.chats.filter(chat => { return chat.emoji });
+    for (let i = 0; i < chats.length; i++) {
+      chats[i].emoji = false;
+    }
+    let chat = this.chats[this.chats.length - idx - 1];
+    chat.emoji = true;
+    setTimeout(() => {
+      tinymce.init(
+        {
+          selector: ".emoji", menubar: false, inline: true, plugins: ['emoticons'], toolbar: 'emoticons',
+          setup: editor => {
+            editor.on('init', e => {
+              let emoji = <any>document.getElementsByClassName('emoji');
+              emoji[0].focus();
+              let bar = <any>document.getElementsByClassName('tox-toolbar');
+              let button = bar[0].children[0].children[0];//bar[0].getElementsByTagName('button');
+              button.focus();
+              button.click();
+            });
+            editor.on('change', e => {
+              this.dbcon.collection('chat', ref => ref.where('upd', "==", chat.upd)).get().subscribe(query => {
+                if (query.docs.length) {
+                  let doc = query.docs[0].data();
+                  let id: string
+                  if (doc.react) {
+                    id = Object.keys(doc.react).length.toString();
+                  } else {
+                    id = "0";
+                    doc.react = {};
+                  }
+                  let txt = editor.getContent({ format: 'text' });
+                  doc.react[id] = { upd: new Date(), emoji: txt, na: this.data.user.na };
+                  this.dbcon.collection('chat').doc(query.docs[0].id).update({ react: doc.react });
+                  chat.emoji = false;
+                  editor.destroy();
+                  editor.remove();
+                } else {
+                  alert('リアクション(' + chat.upd + ')に失敗しました。');
+                }
+              });
+            });
+          }
+        });
+    }, 200);
+  }
+  edit(e, idx) {
+    e.target.classList.add("tiny");
+    e.target.contentEditable = true;
+    this.chats[this.chats.length - idx - 1].edit = true;
+    tinymce.init(tinyinit);
+  }
+  editSend(e, idx) {
+    let div = e.currentTarget.parentElement.parentElement.parentElement.getElementsByClassName("chattxt");
+    let chat = this.chats[this.chats.length - idx - 1];//new Date(item.children[0].innerHTML);
+    this.dbcon.collection('chat', ref => ref.where('upd', "==", chat.upd)).get().subscribe(query => {
+      if (query.docs.length) {
+        let txt = tinymce.activeEditor.getContent({ format: 'html' });
+        this.dbcon.collection('chat').doc(query.docs[0].id).update({
+          rev: new Date(),
+          txt: txt
+        });
+        tinymce.activeEditor.destroy();
+        tinymce.activeEditor.remove();
+        div[0].classList.remove("tiny");
+        div[0].contentEditable = false;
+        chat.edit = false;
+      } else {
+        alert('編集(' + chat.upd + ')に失敗しました。');
+      }
+    });
+  }
+  delete(e, idx) {
+    let div = e.target.parentElement.parentElement.getElementsByClassName("chattxt");
+    if (!div || !div.length) {
+      div = e.target.parentElement.parentElement.parentElement.getElementsByClassName("chattxt");
+    }
+    if (!div || !div.length) { console.error("メンション削除処理失敗"); }
+    let upd = this.chats[this.chats.length - idx - 1].upd;
     let mentions = div[0].getElementsByClassName("mention");
     if (mentions.length) {
       for (let i = 0; i < mentions.length; i++) {
@@ -368,20 +467,18 @@ export class RoomComponent implements OnInit {
           this.storage.ref("room/" + this.data.room.id + "/org/" + doc.img).delete();
         }
         this.dbcon.collection('chat').doc(query.docs[0].id).delete();
-        this.chats = this.chats.filter(chat => chat.upd.toDate().getTime() !== upd.getTime());
+        this.chats = this.chats.filter(chat => chat.upd.toDate().getTime() !== upd.toDate().getTime());
       } else {
         alert('書き込み(' + upd + ')削除に失敗しました。');
       }
     });
   }
-  popMember(e) {
-    let chatIndex = e.currentTarget.parentElement.children[1].innerHTML;
-    let chat = this.chats[this.chats.length - chatIndex - 1];
-    this.php.get("member", { rid: this.data.room.id, uid: chat.uid }).subscribe((res: any) => {
+  popMember(e, uid) {
+    this.php.get("member", { rid: this.data.room.id, uid: uid }).subscribe((res: any) => {
       if (!res || res.error) {
         alert("データベースエラーによりメンバーの取得に失敗しました。");
       } else {
-        let member = { id: chat.uid, na: chat.na, avatar: chat.avatar, auth: 0, payroomid: 0, authroomid: 0 };
+        let member = { id: uid, na: '', avatar: '', auth: 0, payroomid: 0, authroomid: 0 };
         if (res.length) member = res[0];
         this.data.popMemberSubject.next({
           member: member,
@@ -392,6 +489,7 @@ export class RoomComponent implements OnInit {
   }
   ngOnDestroy() {
     if (this.userSb) this.userSb.unsubscribe();
+    if (this.newchatSb) this.newchatSb.unsubscribe();
     if (this.chatSb) this.chatSb.unsubscribe();
     if (this.mentionRoomsSb) this.mentionRoomsSb.unsubscribe();
     //if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
