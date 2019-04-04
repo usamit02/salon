@@ -37,7 +37,7 @@ export class AppComponent {
     });
   }
   ngOnInit() {
-    this.data.roomsState.subscribe((rooms: any) => {
+    this.data.allRoomsState.subscribe((rooms: any) => {
       this.allRooms = rooms;
       this.rooms = this.allRooms.filter(room => room.parent === this.folder.id);
     });
@@ -67,6 +67,7 @@ export class AppComponent {
   joinRoom(room: Room) {
     if (room.folder) {
       this.rooms = this.allRooms.filter(r => r.parent === room.id);
+      this.data.rooms = this.rooms;
       this.newChat();
       this.folder = room;
     }

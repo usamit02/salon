@@ -27,8 +27,9 @@ import { ChatdatePipe } from './pipe/chatdate.pipe';
 import { StoryComponent } from './story/story.component';
 import { NotifyComponent } from './notify/notify.component';
 import { DetailComponent } from './detail/detail.component';
+import { GridComponent } from './grid/grid.component';
 @NgModule({
-  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, MediaPipe, ChatdatePipe, StoryComponent, NotifyComponent, DetailComponent,],
+  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, MediaPipe, ChatdatePipe, StoryComponent, NotifyComponent, DetailComponent, GridComponent,],
   entryComponents: [MemberComponent],
   imports: [
     BrowserModule,

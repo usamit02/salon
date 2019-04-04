@@ -52,9 +52,9 @@
         </ion-item-divider>
         <ion-list>
           <ion-item *ngFor="let member of onMembers" button="true" (click)="popMember(member,$event)">
-            <ion-avatar item-left><img [src]="member.avatar"></ion-avatar>
-            <span>{{member.na}}</span>
-            <ion-icon [name]="member.rtc" item-right></ion-icon>
+            <ion-avatar><img [src]="member.avatar"></ion-avatar>
+            <ion-label>{{member.na}}</ion-label>
+            <ion-icon [name]="member.rtc" slot="end"></ion-icon>
           </ion-item>
         </ion-list>
         <ion-item-divider *ngIf="offMembers.length" color="secondary">
@@ -64,10 +64,10 @@
         </ion-item-divider>
         <ion-list>
           <ion-item *ngFor="let member of offMembers" button="true" (click)="popMember(member,$event)">
-            <ion-avatar item-left>
+            <ion-avatar>
               <img [src]="member.avatar">
             </ion-avatar>
-            <span>{{member.na}}</span>
+            <ion-label>{{member.na}}</ion-label>
           </ion-item>
         </ion-list>
       </ion-content>

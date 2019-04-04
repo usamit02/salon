@@ -8,12 +8,13 @@ export class DataService {
   user = new User();
   userSubject = new Subject<User>();
   userState = this.userSubject.asObservable();
-  rooms: Array<Room> = [];
-  roomsSubject = new Subject<Array<Room>>();
-  roomsState = this.roomsSubject.asObservable();
+  allRooms: Array<Room> = [];
+  allRoomsSubject = new Subject<Array<Room>>();
+  allRoomsState = this.allRoomsSubject.asObservable();
   room = new Room();
   roomSubject = new Subject<Room>();
   roomState = this.roomSubject.asObservable();
+  rooms: Array<Room> = [];
   mentionSubject = new Subject();
   popMemberSubject = new Subject();
   mentions = {};
@@ -46,8 +47,8 @@ export class DataService {
   }
   readRooms() {
     this.php.get("room", { uid: this.user.id }).subscribe((rooms: any) => {
-      this.rooms = rooms;
-      this.roomsSubject.next(rooms);
+      this.allRooms = rooms;
+      this.allRoomsSubject.next(rooms);
       console.log('readRooms');
     });
   }
@@ -68,7 +69,7 @@ export class DataService {
     });
     this.mentionRooms = [];
     Object.keys(mentionCounts).forEach((key) => {
-      let rooms = this.rooms.filter(room => room.id === Number(key));
+      let rooms = this.allRooms.filter(room => room.id === Number(key));
       if (rooms.length) {
         this.mentionRooms.push({ id: rooms[0].id, na: rooms[0].na, count: mentionCounts[key] });
       }
@@ -114,4 +115,5 @@ export class Room {
   auth?: number = 0;
   count?: number = 0;
   uid?: string = "";
+  img?: number = 0;
 }

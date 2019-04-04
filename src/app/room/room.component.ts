@@ -40,11 +40,11 @@ export class RoomComponent implements OnInit {
       } else if (params.id > 1000000000 && this.data.user.id) {//ダイレクトメール
         this.chatInit(params.id);
         this.data.joinRoom({ id: params.id, na: this.data.directUser.na + "へメール", chat: true })
-      } else if (this.data.rooms.length) {
-        this.readRooms(this.data.rooms, params.id);
+      } else if (this.data.allRooms.length) {
+        this.readRooms(this.data.allRooms, params.id);
       } else {
         this.data.readRooms();
-        this.data.roomsState.subscribe(rooms => {
+        this.data.allRoomsState.subscribe(rooms => {
           this.readRooms(rooms, params.id);
         });
       }
