@@ -1,4 +1,4 @@
-<ion-header>
+<ion-header id="header">
   <ion-toolbar>
     <button style="display:none;" id="dummy"></button>
     <ion-buttons slot="start">
@@ -6,21 +6,26 @@
     </ion-buttons>
     <ion-item>
       <ion-title>{{data.room.na}}</ion-title>
-      <ion-button (click)="rtc('headset')" item-right>
+      <ion-button *ngIf="data.rtc" (click)="closeRtc()" color="light">
+        <ion-icon name="close"></ion-icon>切断
+      </ion-button>
+      <ion-button *ngIf="!data.rtc" (click)="rtc('headset')">
         <ion-icon name="headset"></ion-icon>
         視聴
       </ion-button>
-      <ion-buttons *ngIf="data.user.id">
-        <ion-button (click)="rtc('mic')" icon-left item-right>
-          <ion-icon color="danger" name="mic"></ion-icon>ラジオ
-        </ion-button>
-        <ion-button (click)="rtc('videocam')" color="danger">
-          <ion-icon name="videocam"></ion-icon>動画
-        </ion-button>
-        <ion-button icon-only item-right (click)="logout()" icon-left color="dark">
+      <ng-container *ngIf="data.user.id">
+        <ng-container *ngIf="!data.rtc">
+          <ion-button color="warning" (click)="rtc('mic')">
+            <ion-icon name="mic"></ion-icon>音声
+          </ion-button>
+          <ion-button color="danger" (click)="rtc('videocam')">
+            <ion-icon name="videocam"></ion-icon>動画
+          </ion-button>
+        </ng-container>
+        <ion-button (click)="logout()" color="dark">
           <ion-icon name="exit"></ion-icon>
         </ion-button>
-      </ion-buttons>
+      </ng-container>
     </ion-item>
     <ion-buttons slot="end">
       <ion-menu-button menu="end"></ion-menu-button>

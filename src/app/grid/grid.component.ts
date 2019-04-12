@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { DataService } from '../provider/data.service';
 import { Router } from '@angular/router';
 @Component({
@@ -7,13 +7,13 @@ import { Router } from '@angular/router';
   styleUrls: ['./grid.component.scss']
 })
 export class GridComponent implements OnInit {
-  @Input() rooms;
   constructor(private data: DataService, private router: Router) { }
 
   ngOnInit() {
   }
   joinRoom(room) {
     this.data.joinRoom(room);
+    this.router.navigate(['/home/room', room.id]);
   }
   ownerClick(no) {
     this.router.navigate(['/detail', no]);

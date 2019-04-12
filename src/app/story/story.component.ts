@@ -49,10 +49,19 @@ export class StoryComponent implements OnInit {
           this.ui.alert("プランの読込に失敗しました。再読み込みを試してください。\n" + res.error);
         } else {
           if (payid === -1) {
-            this.plan = res.plan;
-            if (!res.plan.billing_day) this.plan.billing_day = new Date().getDate();
+            if (!res.plan.prorate && res.plan.billing_day) {
+              this.ui.alert("データーエラーにより加入できません。\r\nC-Lifeまでお問合せください。");
+              this.payid = 0;
+            } else {
+              if (!res.plan.billing_day && !res.plan.auth_days) {
+                let date = new Date();
+                date.setDate(date.getDate() + res.plan.trial_days);
+                res.plan.billing_day = date.getDate();
+              }
+              this.plan = res.plan;
+              this.card = res.card;
+            }
           }
-          this.card = res.card;
         }
       });
     } else {
@@ -70,9 +79,29 @@ export class StoryComponent implements OnInit {
         if (res.plan === 0) {
           this.ui.pop('ようこそ「' + this.room.na + "」へ");
           this.data.room.lock = 0;
+          this.data.rooms.map(room => {
+            if (room.id === this.data.room.id) {
+              room.lock = 0;
+            }
+          });
+          this.data.allRooms.map(room => {
+            if (room.id === this.data.room.id) {
+              room.lock = 0;
+            }
+          });
         } else if (res.plan) {
           this.ui.alert('「' + this.room.na + '」へ加入申込しました。\n審査完了まで最大' + res.plan + '日間お待ちください。');
           this.data.room.lock = 1;
+          this.data.rooms.map(room => {
+            if (room.id === this.data.room.id) {
+              room.lock = 1;
+            }
+          });
+          this.data.allRooms.map(room => {
+            if (room.id === this.data.room.id) {
+              room.lock = 1;
+            }
+          });
         }
       } else if (res.msg === "charge") {
         this.ui.pop("支払い完了しました。コンテンツをお楽しみください。");

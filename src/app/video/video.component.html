@@ -1,0 +1,28 @@
+<ion-header id="media">
+  <ion-fab vertical="top" horizontal="end" slot="fixed">
+    <ion-fab-button color="light" (click)=close()>
+      <ion-icon name="exit"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+</ion-header>
+<ion-content>
+
+</ion-content>
+<ion-footer>
+  <div class="tiny"></div>
+  <ion-button [disabled]="!sendable" (click)="send()">
+    <ion-icon name="ios-send"></ion-icon>
+  </ion-button>
+
+</ion-footer>
+
+<!--
+
+
+
+  <video id="myVideo" autoplay></video>
+  <video id="yourVideo" autoplay></video>
+  <audio id="audio" autoplay></audio>
+
+
+-->

@@ -1,6 +1,6 @@
 <ion-grid>
   <ion-row>
-    <ion-col size-xs="12" size-sm="6" size-md="4" size-lg="6" size-xl="4" *ngFor="let room of rooms">
+    <ion-col size-xs="12" size-sm="6" size-md="4" size-lg="6" size-xl="4" *ngFor="let room of data.rooms">
       <ion-card>
         <ion-card-header (click)="joinRoom(room)">
           <ion-card-title>{{room.na}}</ion-card-title>

@@ -9,7 +9,6 @@ import { Router } from '@angular/router';
 import { MemberComponent } from './member/member.component';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { UiService } from './provider/ui.service';
-import { ComponentFactoryBoundToModule } from '@angular/core/src/linker/component_factory_resolver';
 const FOLDER = { id: 1, na: "ブロガーズギルド", parent: 1, folder: true };
 @Component({
   selector: 'app-root',
@@ -43,6 +42,12 @@ export class AppComponent {
     });
     this.data.roomState.subscribe((room: Room) => {
       this.room = room;
+      if (room.folder) {
+        this.rooms = this.allRooms.filter(r => r.parent === room.id);
+        this.data.rooms = this.rooms;
+        this.newChat();
+        this.folder = room;
+      }
       //this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: this.data.user, rtc: "" });
       this.php.get('member', { rid: room.id }).subscribe((members: any) => {
         this.offMembers = [];
@@ -65,12 +70,7 @@ export class AppComponent {
     });*/
   }
   joinRoom(room: Room) {
-    if (room.folder) {
-      this.rooms = this.allRooms.filter(r => r.parent === room.id);
-      this.data.rooms = this.rooms;
-      this.newChat();
-      this.folder = room;
-    }
+    this.data.joinRoom(room);
     this.data.directUser = room.id > 1000000000 ? { id: room.uid, na: room.na, avatar: "" } : { id: "", na: "", avatar: "" };
     if (room.id > 0) {
       this.router.navigate(['/home/room', room.id]);
@@ -96,7 +96,7 @@ export class AppComponent {
       this.newChat();
     }
   }
-  newChat() {
+  newChat() {//未読表示
     let rids = [];
     for (let i = 0; i < this.rooms.length; i++) {
       rids.push(this.rooms[i].id);

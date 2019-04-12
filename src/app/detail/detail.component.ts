@@ -111,6 +111,39 @@ export class DetailComponent implements OnInit {
       this.user.links = links;
     });
   }
+  async judge(member) {
+    const alert = await this.alertController.create({
+      header: member.room + "への参加を歓迎。",
+      buttons: [
+        {
+          text: 'OK', handler: (data) => {
+            this.php.get("pay/roompay", { uid: this.user.id, rid: member.rid, ok: this.data.user.id }).subscribe((res: any) => {
+              if (res.msg === "ok") {
+                this.ui.pop(this.user.na + "を" + member.room + "に招待。");
+                member.auth = 1;
+                member.class = "メンバー";
+              } else {
+                this.ui.alert(res.error);
+              }
+            });
+          }
+        },
+        {
+          text: 'NG', handler: () => {
+            this.php.get("pay/roompay", { uid: this.user.id, rid: member.rid, ban: this.data.user.id }).subscribe((res: any) => {
+              if (res.msg === "ok") {
+                this.ui.pop(this.user.na + "は" + member.room + "に入れない、残念でした。");
+                this.user.member = this.user.member.filter(m => { return m.rid !== member.rid; });
+              } else {
+                this.ui.alert(res.error);
+              }
+            });
+          }
+        },
+      ]
+    });
+    await alert.present();
+  }
   close() {
     this.location.back();
   }

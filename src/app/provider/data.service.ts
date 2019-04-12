@@ -21,6 +21,8 @@ export class DataService {
   mentionRooms: Array<any> = [];
   mentionRoomsSubject = new Subject<Array<any>>();
   directUser: User;
+  rtc: string;
+  rtcSubject = new Subject<string>();
   constructor(private php: PhpService, ) { }
   login(user) {
     if (this.user.id !== user.uid) {
@@ -46,6 +48,7 @@ export class DataService {
     }
   }
   readRooms() {
+    this.rtc = null;
     this.php.get("room", { uid: this.user.id }).subscribe((rooms: any) => {
       this.allRooms = rooms;
       this.allRoomsSubject.next(rooms);
@@ -55,6 +58,7 @@ export class DataService {
   joinRoom(room: Room) {
     this.room = room;
     this.roomSubject.next(room);
+    this.rtc = null;
     console.log('joinRoom:' + room.na);
   }
   mentionRoom(mentions) {
