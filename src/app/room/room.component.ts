@@ -114,10 +114,10 @@ export class RoomComponent implements OnInit {
     }
   }
   readRooms(rooms: Array<Room>, id: number) {
-    let room = rooms.filter(room => { return room.id == id });
-    this.data.room = room.length ? room[0] : new Room;
-    this.data.joinRoom(this.data.room);
-    if (room[0].chat) this.chatInit();
+    let newRooms = rooms.filter(room => { return room.id == id });
+    let newRoom = newRooms.length ? newRooms[0] : new Room;
+    this.data.joinRoom(newRoom);
+    if (newRoom.chat) this.chatInit();
   }
   chatInit(direct?: string) {
     this.chatsUsers.unshift(this.data.user);//ログイン切り替え対策用 あやしい

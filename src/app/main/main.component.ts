@@ -8,7 +8,6 @@ import { DataService } from '../provider/data.service';
 import { PhpService } from '../provider/php.service';
 import { Observable } from 'rxjs';
 import { UiService } from '../provider/ui.service';
-import { Router } from '@angular/router';
 declare var tinymce;
 @Component({
   selector: 'app-main',
@@ -26,7 +25,7 @@ export class MainComponent {
   constructor(
     private data: DataService, private afAuth: AngularFireAuth, private db: AngularFirestore,
     private actionSheetCtrl: ActionSheetController, private php: PhpService, private storage: AngularFireStorage,
-    private ui: UiService, private router: Router
+    private ui: UiService
   ) { }
   ngOnInit() {
     this.data.mentionSubject.asObservable().subscribe((member: any) => {
@@ -287,7 +286,6 @@ export class MainComponent {
     window.open("https://twitter.com/");
   }
   rtc(action) {
-    //this.router.navigate(['/video', this.data.room.id, action]);
     this.data.rtcSubject.next(action);
     this.data.rtc = action;
   }

@@ -14,9 +14,12 @@ export const firebaseConfig = {
   storageBucket: 'blogersguild1.appspot.com',
   messagingSenderId: '1091781872346'
 };
-//export const socketConfig: SocketIoConfig = { url: 'http://localhost:3002', options: {} };
-export const socketConfig: SocketIoConfig = { url: 'https://www.clife.cf:3002', options: {} };
-
+export const socketConfig: SocketIoConfig = { url: 'http://localhost:3003', options: {} };
+//export const socketConfig: SocketIoConfig = { url: 'https://www.clife.cf:3003', options: {} };
+//export const socketConfig: SocketIoConfig = { url: 'http://35.193.127.88:3003', options: {} };
+export const FOLDER = { id: 1, na: "ブロガーズギルド", parent: 1, folder: true };
+export const PHPURL = "http://localhost/public_html/";
+//export const PHPURL ="https://bloggersguild.cf/";
 export const tinyinit = {
   selector: ".tiny",
   menubar: false,

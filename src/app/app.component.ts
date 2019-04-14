@@ -5,21 +5,19 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { PhpService } from './provider/php.service';
 import { User, Room, DataService } from './provider/data.service';
 import { Router } from '@angular/router';
-//import { Socket } from 'ngx-socket-io';
+import { Socket } from 'ngx-socket-io';
 import { MemberComponent } from './member/member.component';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { UiService } from './provider/ui.service';
-const FOLDER = { id: 1, na: "ブロガーズギルド", parent: 1, folder: true };
+import { FOLDER } from '../environments/environment';
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss']
 })
 export class AppComponent {
-  room: Room;
-  rooms: Array<Room> = [];
-  allRooms: Array<Room> = [];
   folder: Room = FOLDER;
+  rooms: Array<Room> = [];
   bookmk: boolean = false;
   onMembers: Array<User> = [];
   offMembers: Array<User> = [];
@@ -28,7 +26,7 @@ export class AppComponent {
   constructor(
     private platform: Platform, private splashScreen: SplashScreen, private statusBar: StatusBar,
     private data: DataService, private php: PhpService, private router: Router,
-    public pop: PopoverController, private db: AngularFirestore, private ui: UiService,
+    public pop: PopoverController, private db: AngularFirestore, private ui: UiService, private socket: Socket,
   ) {
     this.platform.ready().then(() => {
       this.statusBar.styleDefault();
@@ -36,25 +34,17 @@ export class AppComponent {
     });
   }
   ngOnInit() {
-    this.data.allRoomsState.subscribe((rooms: any) => {
-      this.allRooms = rooms;
-      this.rooms = this.allRooms.filter(room => room.parent === this.folder.id);
+    this.data.allRoomsState.subscribe((rooms: Array<Room>) => {
+      this.data.rooms = rooms.filter(room => room.parent === this.folder.id);
     });
     this.data.roomState.subscribe((room: Room) => {
-      this.room = room;
-      if (room.folder) {
-        this.rooms = this.allRooms.filter(r => r.parent === room.id);
-        this.data.rooms = this.rooms;
-        this.newChat();
-        this.folder = room;
-      }
-      //this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: this.data.user, rtc: "" });
+      this.newChat();
       this.php.get('member', { rid: room.id }).subscribe((members: any) => {
         this.offMembers = [];
         for (let i = 0; i < members.length; i++) {
           var f = true;
           for (let j = 0; j < this.onMembers.length; j++) {
-            if (members[i].id === this.onMembers[j].id) f = true;//false;
+            if (members[i].id === this.onMembers[j].id) f = false;
           }
           if (f) this.offMembers.push(members[i]);
         }
@@ -63,14 +53,25 @@ export class AppComponent {
     this.data.popMemberSubject.asObservable().subscribe((e: any) => {
       this.popMember(e.member, e.event);
     });
-    /*this.socket.connect();
+    this.socket.connect();
     this.socket.on("join", users => {
-      console.log(users[0].na + "_" + users[0].rtc);
-      this.onMembers = users;
-    });*/
+      if (users.length) {
+        users.sort((a, b) => {
+          if (a.auth < b.auth) return 1;
+          if (a.auth > b.auth) return -1;
+          return 0;
+        })
+        this.onMembers = users;
+      } else {
+        this.onMembers = [];
+      }
+    });
   }
   joinRoom(room: Room) {
-    this.data.joinRoom(room);
+    if (room.folder) {
+      this.data.rooms = this.data.allRooms.filter(r => r.parent === room.id);
+      this.folder = room;
+    }
     this.data.directUser = room.id > 1000000000 ? { id: room.uid, na: room.na, avatar: "" } : { id: "", na: "", avatar: "" };
     if (room.id > 0) {
       this.router.navigate(['/home/room', room.id]);
@@ -83,31 +84,31 @@ export class AppComponent {
       this.bookmk = !this.bookmk;
     } else {
       if (this.bookmk) {
-        this.rooms = this.allRooms.filter(room => room.bookmark);
+        this.data.rooms = this.data.allRooms.filter(room => room.bookmark);
       } else {
         if (home) {//長押し
           this.folder = FOLDER;
         } else {
-          let folder = this.allRooms.filter(room => room.id === this.folder.parent);
+          let folder = this.data.allRooms.filter(room => room.id === this.folder.parent);
           this.folder = folder.length ? folder[0] : FOLDER;
         }
-        this.rooms = this.allRooms.filter(room => room.parent === this.folder.id);
+        this.data.rooms = this.data.allRooms.filter(room => room.parent === this.folder.id);
       }
       this.newChat();
     }
   }
-  newChat() {//未読表示
+  newChat() {
     let rids = [];
-    for (let i = 0; i < this.rooms.length; i++) {
-      rids.push(this.rooms[i].id);
+    for (let i = 0; i < this.data.rooms.length; i++) {
+      rids.push(this.data.rooms[i].id);
     }
     if (rids.length) {
       this.php.get('room', { uid: this.data.user.id, rids: JSON.stringify(rids) }).subscribe((res: any) => {
-        for (let i = 0; i < this.rooms.length; i++) {
-          if (this.rooms[i].id in res) {
-            let r = res[this.rooms[i].id];
-            let upd = 'upd' in r ? new Date(r.upd).getTime() / 1000 : Math.floor(this.rooms[i].upd.getTime() / 1000);
-            this.rooms[i].new = upd > new Date(r.csd).getTime() / 1000;
+        for (let i = 0; i < this.data.rooms.length; i++) {
+          if (this.data.rooms[i].id in res) {
+            let r = res[this.data.rooms[i].id];
+            let upd = 'upd' in r ? new Date(r.upd).getTime() / 1000 : Math.floor(this.data.rooms[i].upd.getTime() / 1000);
+            this.data.rooms[i].new = upd > new Date(r.csd).getTime() / 1000;
           }
         }
       });
@@ -115,7 +116,7 @@ export class AppComponent {
   }
   mention() {
     this.folder = { id: -2, na: "メンション", parent: 1 };
-    this.rooms = this.data.mentionRooms;
+    this.data.rooms = this.data.mentionRooms;
   }
   direct() {
     this.ui.loading();
@@ -136,7 +137,7 @@ export class AppComponent {
           if (a.upd.getTime() < b.upd.getTime()) return 1;
           return 0;
         });
-        this.rooms = rooms;
+        this.data.rooms = rooms;
         this.ui.loadend();
         this.newChat();
       });
@@ -144,7 +145,7 @@ export class AppComponent {
   }
   config() {
     this.folder = { id: -3, na: "設定", parent: 1 };
-    this.rooms = [
+    this.data.rooms = [
       { id: -101, na: "通知", parent: -3 }, { id: -102, na: "自己紹介", parent: -3 }
     ]
   }
@@ -165,6 +166,9 @@ export class AppComponent {
       this.onMembers = members.on;
       this.offMembers = members.off;
     }
+  }
+  bookmark(room: Room) {
+
   }
   async popMember(member, event: any) {
     const popover = await this.pop.create({

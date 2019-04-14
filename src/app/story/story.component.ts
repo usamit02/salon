@@ -132,7 +132,7 @@ export class StoryComponent implements OnInit {
           if (res.msg === 'ok') {
             this.ui.pop(this.room.na + "から脱退しました。次回ログインから入室できません。");
           } else {
-            this.ui.alert("退会処理失敗しました。\n C-Lifeまでお問合せください。\n" + res.error);
+            this.ui.alert("退会処理失敗しました。\r\n" + res.error);
           }
         });
       }

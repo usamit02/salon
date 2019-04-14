@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { PhpService } from './php.service';
+import { Socket } from 'ngx-socket-io';
+import { PHPURL } from '../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
@@ -21,14 +23,18 @@ export class DataService {
   mentionRooms: Array<any> = [];
   mentionRoomsSubject = new Subject<Array<any>>();
   directUser: User;
-  rtc: string;
+  rtc: string = null;
   rtcSubject = new Subject<string>();
-  constructor(private php: PhpService, ) { }
+  constructor(private php: PhpService, private socket: Socket) { }
   login(user) {
     if (this.user.id !== user.uid) {
       this.php.get("user", { uid: user.uid, na: user.displayName, avatar: user.photoURL }).subscribe((res: any) => {
         if (res.msg === "ok") {
           this.user = res.user;
+          let user = {
+            id: this.user.id, na: this.user.na, avatar: this.user.avatar, no: this.user.no, auth: this.room.auth
+          };
+          this.socket.emit('join', { newRoomId: this.room.id, oldRoomId: "", rtc: "", user: user });
         } else {
           alert(res.msg);
           this.user = new User;
@@ -44,6 +50,7 @@ export class DataService {
       this.user = new User;
       this.userSubject.next(this.user);
       console.log("logout");
+      this.socket.emit('logout', { RoomId: this.room.id });
       this.readRooms();
     }
   }
@@ -51,11 +58,14 @@ export class DataService {
     this.rtc = null;
     this.php.get("room", { uid: this.user.id }).subscribe((rooms: any) => {
       this.allRooms = rooms;
+
       this.allRoomsSubject.next(rooms);
       console.log('readRooms');
     });
   }
   joinRoom(room: Room) {
+    let user = { id: this.user.id, na: this.user.na, avatar: this.user.avatar, no: this.user.no, auth: room.auth };
+    this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, rtc: "", user: user });
     this.room = room;
     this.roomSubject.next(room);
     this.rtc = null;
@@ -93,8 +103,8 @@ export class DataService {
 
 export class User {
   id: string = "";
-  na: string = "ログインして";
-  avatar: string = "";
+  na: string = "未ログイン";
+  avatar: string = PHPURL + "img/avatar.jpg";
   p?: number = 0;
   no?: number = 0;
   upd?: Date;

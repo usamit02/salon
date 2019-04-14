@@ -1,8 +1,3 @@
-<!--
-<ion-app>
-  <ion-router-outlet></ion-router-outlet>
-</ion-app>
--->
 <ion-app>
   <ion-split-pane contentId="menu-content">
     <ion-menu contentId="menu-content" side="start">
@@ -17,7 +12,7 @@
       </ion-header>
       <ion-content>
         <ion-list>
-          <ion-item *ngFor="let room of rooms" button="true" (click)="joinRoom(room)" (press)="bookmark(room.id)">
+          <ion-item *ngFor="let room of data.rooms" button="true" (click)="joinRoom(room)" (press)="bookmark(room)">
             <span>{{room.na}}</span><span class="mention">{{room.count}}</span>
             <ion-icon *ngIf="room.folder===1" name="arrow-dropdown"></ion-icon>
             <ion-icon *ngIf="room.new" name="mail-unread"></ion-icon>
@@ -25,7 +20,7 @@
             <ion-icon *ngIf="room.bookmark===1" name="bookmark" item-right></ion-icon>
           </ion-item>
         </ion-list>
-        <ion-list *ngIf="folder.id===1 && !bookmk">
+        <ion-list *ngIf="folder.id===1 && !bookmk && data.user.id">
           <ion-item *ngIf="data.mentionRooms.length" button="true" (click)="mention()"><span>メンション</span><span class="mention">{{data.mentionRooms.length}}</span></ion-item>
           <ion-item button="true" (click)="direct()"><span>ダイレクト</span></ion-item>
           <ion-item button="true" (click)="config()"><span>設定</span></ion-item>
@@ -45,11 +40,9 @@
       </ion-header>
       <ion-content>
         <ion-text *ngIf="!onMembers.length && !offMembers.length">誰もいない...</ion-text>
-        <ion-item-divider *ngIf="onMembers.length" color="secondary">
-          <ion-label>
-            オンライン{{onMembers.length}}人
-          </ion-label>
-        </ion-item-divider>
+        <ion-text *ngIf="onMembers.length">
+          オンライン　{{onMembers.length}}人
+        </ion-text>
         <ion-list>
           <ion-item *ngFor="let member of onMembers" button="true" (click)="popMember(member,$event)">
             <ion-avatar><img [src]="member.avatar"></ion-avatar>
@@ -57,11 +50,9 @@
             <ion-icon [name]="member.rtc" slot="end"></ion-icon>
           </ion-item>
         </ion-list>
-        <ion-item-divider *ngIf="offMembers.length" color="secondary">
-          <ion-label>
-            オフライン{{offMembers.length}}人
-          </ion-label>
-        </ion-item-divider>
+        <ion-text *ngIf="offMembers.length">
+          オフライン　{{offMembers.length}}人
+        </ion-text>
         <ion-list>
           <ion-item *ngFor="let member of offMembers" button="true" (click)="popMember(member,$event)">
             <ion-avatar>
