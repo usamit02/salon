@@ -38,6 +38,7 @@ export class StoryComponent implements OnInit {
   }
   goPayMode(payid) {
     if (this.data.user.id) {
+      let room = this.room;
       this.payid = payid;
       this.ui.loading("読込中...");
       Payjp.setPublicKey("pk_test_12e1f56f9f92414d7b00af63");
@@ -47,9 +48,10 @@ export class StoryComponent implements OnInit {
         this.ui.loadend();
         if (res.error) {
           this.ui.alert("プランの読込に失敗しました。再読み込みを試してください。\n" + res.error);
+          this.payid = 0;
         } else {
           if (payid === -1) {
-            if (!res.plan.prorate && res.plan.billing_day) {
+            if (!res.plan.prorate && res.plan.billing_day) {//引き落とし日指定なのに日割りになってない、プラン保存ミス
               this.ui.alert("データーエラーにより加入できません。\r\nC-Lifeまでお問合せください。");
               this.payid = 0;
             } else {

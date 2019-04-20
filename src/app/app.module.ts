@@ -10,10 +10,14 @@ import { HttpClientModule } from '@angular/common/http'
 import { SocketIoModule } from 'ngx-socket-io';
 import { MentionModule } from 'angular-mentions/mention';
 import { socketConfig, firebaseConfig } from '../environments/environment';
-import { AngularFireModule } from 'angularfire2';
-import { AngularFireAuthModule } from 'angularfire2/auth';
+//import { AngularFireModule } from 'angularfire2';
+//import { AngularFireAuthModule } from 'angularfire2/auth';
+//import { AngularFirestoreModule } from '@angular/fire/firestore';
+//import { AngularFireStorageModule } from 'angularfire2/storage';
+import { AngularFireModule } from '@angular/fire';
+import { AngularFireAuthModule } from '@angular/fire/auth';
 import { AngularFirestoreModule } from '@angular/fire/firestore';
-import { AngularFireStorageModule } from 'angularfire2/storage';
+import { AngularFireStorageModule } from '@angular/fire/storage';
 import { FormsModule } from '@angular/forms';
 import { PhpService } from './provider/php.service';
 import { DataService } from './provider/data.service';

@@ -1,13 +1,15 @@
 import { Component } from '@angular/core';
 import { ActionSheetController } from '@ionic/angular';
 import * as firebase from 'firebase';
-import { AngularFireAuth } from 'angularfire2/auth';
+import { auth } from 'firebase/app';
+import { AngularFireAuth } from '@angular/fire/auth';
 import { AngularFirestore } from '@angular/fire/firestore';
-import { AngularFireStorage } from 'angularfire2/storage';
+import { AngularFireStorage } from '@angular/fire/storage';
 import { DataService } from '../provider/data.service';
 import { PhpService } from '../provider/php.service';
 import { Observable } from 'rxjs';
 import { UiService } from '../provider/ui.service';
+import { Socket } from 'ngx-socket-io';
 declare var tinymce;
 @Component({
   selector: 'app-main',
@@ -22,10 +24,11 @@ export class MainComponent {
   media = new Media;
   uploadPercent: Observable<number>;
   sendable: boolean = false;
+  typing: boolean = true;
   constructor(
     private data: DataService, private afAuth: AngularFireAuth, private db: AngularFirestore,
     private actionSheetCtrl: ActionSheetController, private php: PhpService, private storage: AngularFireStorage,
-    private ui: UiService
+    private ui: UiService, private socket: Socket,
   ) { }
   ngOnInit() {
     this.data.mentionSubject.asObservable().subscribe((member: any) => {
@@ -37,11 +40,17 @@ export class MainComponent {
       var newNode = ed.dom.select('#' + endId);
       ed.selection.select(newNode[0]);
     });
-    this.db.collection('black').valueChanges().subscribe((data: any) => {
+    /*this.db.collection('black').valueChanges().subscribe((data: any) => {
       if (data.length && data[0].uid === this.data.user.id) {
         this.logout();
         alert("KICKまたはBANされたため強制ログアウトします。")
       }
+    });*/
+    this.socket.on("typing", writer => {
+      this.writer = writer;
+      setTimeout(() => {
+        this.writer = "";
+      }, 2000)
     });
     tinymce.init({
       selector: ".tiny",
@@ -55,15 +64,21 @@ export class MainComponent {
       },
       language_url: 'https://bloggersguild.cf/js/ja.js',
       plugins: [
-        'autolink autosave codesample contextmenu link lists advlist table textcolor paste emoticons'
+        'autolink autosave codesample link lists advlist table paste emoticons'
       ],
       toolbar: 'undo redo | forecolor | emoticons styleselect | blockquote link copy paste',
       contextmenu: 'restoredraft | inserttable cell row column deletetable | bullist numlist',
       forced_root_block: false, allow_conditional_comments: true, allow_html_in_named_anchor: true, allow_unsafe_link_target: true,
       setup: editor => {
-        editor.on('Change', e => {
+        editor.on('NodeChange KeyDown Paste Change', e => {
           this.sendable = true;
-          console.log('editer change' + e);
+          if (this.typing) {
+            this.socket.emit('typing', this.data.user.na);
+            this.typing = false;
+            setTimeout(() => {
+              this.typing = true;
+            }, 2000);
+          }
         });
       }
     });
@@ -92,23 +107,40 @@ export class MainComponent {
         {
           text: 'twitter',
           icon: "logo-twitter",
+          cssClass: "twitter",
           role: 'destructive',
           handler: () => {
-            this.afAuth.auth.signInWithPopup(new firebase.auth.TwitterAuthProvider());
+            this.afAuth.auth.signInWithPopup(new firebase.auth.TwitterAuthProvider()).catch(reason => {
+              this.ui.pop("ツイッターのログインに失敗しました。");
+            });
           }
         }, {
           text: 'facebook',
           icon: "logo-facebook",
           role: 'destructive',
           handler: () => {
-            this.afAuth.auth.signInWithPopup(new firebase.auth.FacebookAuthProvider());
+            this.afAuth.auth.signInWithPopup(new firebase.auth.FacebookAuthProvider()).catch(reason => {
+              this.ui.pop("フェイスブックのログインに失敗しました。");
+            });
           }
         }, {
           text: 'google',
           icon: "logo-google",
           role: 'destructive',
           handler: () => {
-            this.afAuth.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+            this.afAuth.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(reason => {
+              this.ui.pop("グーグルのログインに失敗しました。");
+            });
+          }
+        }, {
+          text: 'yahoo',
+          icon: "logo-yahoo",
+          cssClass: "actionyahoo",
+          role: 'destructive',
+          handler: () => {
+            this.afAuth.auth.signInWithPopup(new auth.OAuthProvider("yahoo.com")).catch(reason => {
+              this.ui.pop("ヤフーのログインに失敗しました。");
+            });
           }
         },
         {
@@ -203,6 +235,8 @@ export class MainComponent {
       add.card = this.media.card;
     }
     this.media = new Media();
+    let inputUrl = <HTMLInputElement>document.getElementById("url");
+    if (inputUrl) inputUrl.value = "";
     this.db.collection(collection).doc(rid.toString()).collection('chat').add(add).catch(err => { alert("チャット書込みに失敗しました。\r\n" + err); }).then(ref => {
       if (collection === 'direct') {
         this.db.collection('direct').doc(rid.toString()).set({ upd: upd }, { merge: true }).then(() => {
@@ -290,8 +324,8 @@ export class MainComponent {
     this.data.rtc = action;
   }
   closeRtc() {
-    this.data.rtcSubject.next(null);
-    this.data.rtc = null;
+    this.data.rtcSubject.next("");
+    this.data.rtc = "";
   }
   ngOnDestroy() {
     this.data.userSubject.unsubscribe();
@@ -303,7 +337,7 @@ class Media {
   public twitter: string = "";
   public youtube: string = "";
   public html: string = "";
-  public card: any = {};
+  public card: any = null;
   isnull(): boolean {
     if (this.img || this.twitter || this.youtube || this.html || this.card) {
       return false;

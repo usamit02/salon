@@ -9,9 +9,8 @@
       <ion-button *ngIf="data.rtc" (click)="closeRtc()" color="light">
         <ion-icon name="close"></ion-icon>切断
       </ion-button>
-      <ion-button *ngIf="!data.rtc" (click)="rtc('headset')">
-        <ion-icon name="headset"></ion-icon>
-        視聴
+      <ion-button *ngIf="!data.rtc" (click)="rtc('headset')" color="primary">
+        <ion-icon name="headset"></ion-icon>視聴
       </ion-button>
       <ng-container *ngIf="data.user.id">
         <ng-container *ngIf="!data.rtc">
@@ -39,12 +38,13 @@
   <ion-toolbar no-padding>
     <ion-item *ngIf="!data.user.id" button="true" (click)="login()">
       ログインしてコミュニケーションを楽しもう
-      <ion-icon color="secondary" name="logo-twitter"></ion-icon>
-      <ion-icon name="logo-facebook"></ion-icon>
-      <ion-icon color="danger" name="logo-google"></ion-icon>
+      <ion-icon class="twitter" name="logo-twitter"></ion-icon>
+      <ion-icon class="facebook" name="logo-facebook"></ion-icon>
+      <ion-icon class="google" name="logo-google"></ion-icon>
+      <ion-icon class="yahoo" name="logo-yahoo"></ion-icon>
     </ion-item>
     <div [class.none]="!data.user.id||!data.room.chat">
-      <ion-item no-padding>
+      <ion-item>
         <ng-container *ngIf="uploadPercent|async as percent;else sendbox">
           <ion-progress-bar [value]="percent/100"></ion-progress-bar>{{percent|number:'1.0-0'}}%
         </ng-container>
@@ -64,8 +64,7 @@
               <ion-icon color="danger" name="logo-youtube"></ion-icon>
             </ion-button>
             <ng-container *ngIf="mediaButton.url">
-              <input class="url" type="text" placeholder="youtubeやtwitterなどのurl" (change)="urlClick($event)">
-              <button (click)="urlClick($event)">適用</button>
+              <input id="url" type="text" placeholder="youtubeやtwitterなどのurl" (change)="urlClick($event)">
             </ng-container>
           </ion-buttons>
           <div class="tiny"></div>
@@ -73,8 +72,8 @@
             <ion-icon name="ios-send"></ion-icon>
           </ion-button>
         </ng-template>
+        <p id="writer">{{writer}}</p>
       </ion-item>
-      <p id="writer">{{writer}}</p>
     </div>
   </ion-toolbar>
   <canvas style='display:none;'></canvas>

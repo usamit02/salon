@@ -1,12 +1,14 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { IonContent, IonInfiniteScroll, ActionSheetController } from '@ionic/angular';
 import { ActivatedRoute } from '@angular/router';
-import { Room, User, DataService } from '../provider/data.service';
+import { Room, DataService } from '../provider/data.service';
 import { AngularFirestore } from '@angular/fire/firestore';
-import { AngularFireStorage } from 'angularfire2/storage';
+import { AngularFireStorage } from '@angular/fire/storage';
 import { Subscription } from 'rxjs';
 import { PhpService } from '../provider/php.service';
 import { tinyinit } from '../../environments/environment';
+import { Socket } from 'ngx-socket-io';
+import { UiService } from '../provider/ui.service';
 declare var tinymce; declare var twttr; declare var Peer: any;
 @Component({
   selector: 'app-room',
@@ -16,8 +18,9 @@ declare var tinymce; declare var twttr; declare var Peer: any;
 export class RoomComponent implements OnInit {
   @ViewChild('chatscontent') content: IonContent;
   @ViewChild('top') top: IonInfiniteScroll; @ViewChild('btm') btm: IonInfiniteScroll;
+  rid: number;
   chats = [];
-  chatsUsers: Array<User> = [];
+  loading: boolean = false;
   dbcon;
   topMsg: string = ""; btmMsg: string = "";
   readed: boolean;
@@ -27,35 +30,25 @@ export class RoomComponent implements OnInit {
   newUpds = [];
   mentionTop: number = 0; mentionBtm: number = 0;
   currentY: number = 0;
+  cursor: Date = null;
   twitter: boolean = false;
   rtc: string;
   peer;
   peerRoom;
   mentionRoomsSb: Subscription; mentionDbSb: Subscription; newchatSb: Subscription; chatSb: Subscription;
-  paramsSb: Subscription; userSb: Subscription; rtcSb: Subscription;
+  paramsSb: Subscription; userSb: Subscription; rtcSb: Subscription; allRoomsSb: Subscription;
   constructor(private actionSheetCtrl: ActionSheetController, private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
-    , private php: PhpService, private storage: AngularFireStorage) { }
+    , private php: PhpService, private storage: AngularFireStorage, private socket: Socket, private ui: UiService) { }
   ngOnInit() {
     this.paramsSb = this.route.params.subscribe(params => {
-      if (params.id === undefined) {
-        this.data.room = new Room;
-        this.data.joinRoom(this.data.room);
-        this.chatInit();
-      } else if (params.id > 1000000000 && this.data.user.id) {//ダイレクトメール
-        this.chatInit(params.id);
-        this.data.joinRoom({ id: params.id, na: this.data.directUser.na + "へメール", chat: true })
-      } else if (this.data.allRooms.length) {
-        this.readRooms(this.data.allRooms, params.id);
-      } else {
-        this.data.readRooms();
-        this.data.allRoomsState.subscribe(rooms => {
-          this.readRooms(rooms, params.id);
-        });
-      }
+      this.rid = params.id;
+      this.cursor = params.csd ? new Date(Number(params.csd) * 1000) : null;
+      this.init();
     });
     this.userSb = this.data.userState.subscribe(user => {
       if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
       if (user.id) {
+        this.init();
         this.mentionDbSb = this.db.collection('user').doc(this.data.user.id.toString()).collection('mention',
           ref => ref.orderBy('upd', 'desc')).snapshotChanges().subscribe((res: Array<any>) => {
             let data: any = {};
@@ -68,6 +61,7 @@ export class RoomComponent implements OnInit {
             this.data.mentionRoom(mentions);
           });
       }
+      this.readRooms(this.data.allRooms, this.rid);
     });
     this.mentionRoomsSb = this.data.mentionRoomsSubject.asObservable().subscribe(mentionRooms => {
       this.onScrollEnd({ currentTarget: <any>document.getElementById('chatscontent') });
@@ -80,6 +74,22 @@ export class RoomComponent implements OnInit {
         this.rtcClose();
       }
     });
+  }
+  init() {
+    if (this.rid === undefined) {
+      this.data.room = new Room;
+      this.data.joinRoom(this.data.room);
+      this.chatInit();
+    } else if (Number(this.rid) > 1000000000 && this.data.user.id) {//ダイレクト
+      this.chatInit(this.rid);
+      this.data.joinRoom({ id: this.rid, na: this.data.directUser.na + "へメッセージ", chat: true })
+    } else if (this.data.allRooms.length) {
+      this.readRooms(this.data.allRooms, this.rid);
+    } else {
+      this.data.readRooms().then(rooms => {
+        this.readRooms(rooms, this.rid);
+      });
+    }
   }
   deleteNotice(upds) {
     let upd0 = upds[0].getTime(); let upd9 = upds[upds.length - 1].getTime();
@@ -119,12 +129,11 @@ export class RoomComponent implements OnInit {
     this.data.joinRoom(newRoom);
     if (newRoom.chat) this.chatInit();
   }
-  chatInit(direct?: string) {
-    this.chatsUsers.unshift(this.data.user);//ログイン切り替え対策用 あやしい
+  chatInit(direct?: number) {
     this.chats = []; this.currentY = 0; this.readed = false; this.twitter = false; this.newUpds = [];
     this.top.disabled = true; this.btm.disabled = true;
-    this.dbcon = direct ? this.db.collection('direct').doc(direct) : this.db.collection('room').doc(this.data.room.id.toString());
-    this.chatLoad(false, this.data.room.csd ? "btm" : "top");
+    this.dbcon = direct ? this.db.collection('direct').doc(direct.toString()) : this.db.collection('room').doc(this.data.room.id.toString());
+    this.chatLoad(false, this.data.room.csd || this.cursor ? "btm" : "top", this.cursor);
     if (this.newchatSb) this.newchatSb.unsubscribe();
     this.newchatSb = this.dbcon.collection('chat', ref => ref.where('upd', '>', new Date())).valueChanges().
       subscribe(data => {//チャットロード以降の書き込み   
@@ -165,6 +174,13 @@ export class RoomComponent implements OnInit {
     }, 3000);
   }
   chatLoad(e, direction, cursor?: Date) {
+    if (!e) {
+      this.loading = true;
+    } else if (this.loading) {
+      e.target.complete();
+      this.loading = false;
+      return;//初回読み込み時の自動スクロールにion-infinate-scrollが反応するのを止める。
+    }
     let db; this.topMsg = ""; this.btmMsg = "";
     if (!cursor) {
       if (this.chats.length) {
@@ -178,7 +194,7 @@ export class RoomComponent implements OnInit {
     } else {
       db = this.dbcon.collection('chat', ref => ref.where('upd', ">", cursor).orderBy('upd', 'asc').limit(20));
     }
-    //
+    let uid = this.data.user.id;//自動ログイン時重複読込対策
     db.get().subscribe(query => {
       let docs1 = docsPush(query, this);
       let limit = direction === 'btm' && !this.chats.length && docs1.length < 20 ? 20 - docs1.length : 0;
@@ -186,8 +202,7 @@ export class RoomComponent implements OnInit {
       db = this.dbcon.collection('chat', ref => ref.where('upd', "<=", cursor).orderBy('upd', 'desc').limit(limit));
       db.get().subscribe(query => {
         let docs2 = docsPush(query, this);
-        let chatsUser = this.chatsUsers.pop();//前回読み込んだユーザー
-        if (chatsUser && chatsUser.id !== this.data.user.id) { return; }//現在読み込まれているchatsが別のログインユーザーの場合、追加読込しない
+        if (uid !== this.data.user.id) return;//自動ログイン時重複読込対策
         if (direction === 'top') {
           this.chats.push(...docs1);
         } else {
@@ -199,7 +214,7 @@ export class RoomComponent implements OnInit {
         if (docs.length && this.chats.length === docs.length) {
           setTimeout(() => {
             if (direction === "top" || !docs1.length) {
-              this.content.scrollToBottom(300);//this.data.scroll("btm");
+              this.content.scrollToBottom(300).then(() => { scrollFin(this); }); //this.data.scroll("btm");
               this.btmMsg = "";
             } else {
               if (docs2.length) {
@@ -212,23 +227,23 @@ export class RoomComponent implements OnInit {
                   }
                 }
                 if (chats[chats.length - 1].offsetTop + chats[chats.length - 1].offsetHeight - cursorTop > content.scrollHeight) {
-                  this.content.scrollToTop(300);
+                  this.content.scrollToTop(300).then(() => { scrollFin(this); });
                 } else {
-                  this.content.scrollToBottom(300);
+                  this.content.scrollToBottom(300).then(() => { scrollFin(this); });
                   this.btmMsg = "";
                 }
               } else {
+                scrollFin(this);
                 //this.topMsg = "既読メッセージを表示↑";
                 //this.content.scrollByPoint(0, 20, 300);//this.data.scroll("btmOne");
               }
             }
             setTimeout(() => {
-              this.top.disabled = false; this.btm.disabled = false;
               if (this.twitter) {
                 twttr.widgets.load();
                 this.twitter = false;
               }
-            }, 3000);
+            }, 1000);
           }, 1000);
         }
         if (e) {
@@ -251,6 +266,10 @@ export class RoomComponent implements OnInit {
       });
       return docs;
     }
+    function scrollFin(that) {
+      that.top.disabled = false; that.btm.disabled = false; that.loading = false;
+    }
+
   }
   chatChange() {
     if (this.chatSb) this.chatSb.unsubscribe();
@@ -315,7 +334,7 @@ export class RoomComponent implements OnInit {
             this.content.scrollToBottom(300);//this.data.scroll('btm');
           } else {
             this.data.room.csd = csd;
-            this.chatInit();
+            this.chatInit(); console.log("chatInit 338");
           }
         });
     }
@@ -367,7 +386,12 @@ export class RoomComponent implements OnInit {
     }
   }
   async chatPress(e, uid, na, idx) {
-    let buttons: Array<any> = [{ text: 'リアクション', icon: 'happy', handler: () => { this.emoji(e, idx); } }]
+    let buttons: Array<any> = [];
+    if (this.data.user.id) {
+      buttons = [
+        { text: 'リアクション', icon: 'happy', handler: () => { this.emoji(e, idx); } },
+        { text: '通報', icon: 'thumbs-down', handler: () => { this.tip(na, idx) } }];
+    }
     if (uid === this.data.user.id || this.data.room.auth > 200) {
       if (e.target.className === 'chattxt') {
         buttons.push(
@@ -378,6 +402,7 @@ export class RoomComponent implements OnInit {
         { text: '削除', icon: 'trash', handler: () => { this.delete(e, idx); } }
       );
     }
+    buttons.push({ text: 'urlをコピー', icon: 'copy', handler: () => { this.copy(idx) } });
     buttons.push({ text: '戻る', icon: 'exit', role: 'cancel' })
     const actionSheet = await this.actionSheetCtrl.create({ header: na, buttons: buttons });
     await actionSheet.present();
@@ -427,6 +452,41 @@ export class RoomComponent implements OnInit {
           }
         });
     }, 200);
+  }
+  tip(na, idx) {
+    let chat = this.chats[this.chats.length - idx - 1];
+    let tip = JSON.stringify({ uid: chat.uid, na: chat.na, txt: chat.txt, upd: chat.upd.toDate() });
+    this.php.get("tip", { rid: this.data.room.id, room: this.data.room.na, uid: this.data.user.id, tiper: this.data.user.na, chat: tip }).subscribe((res: any) => {
+      if (res.msg === 'ok') {
+        this.ui.pop(na + "による問題がある投稿を役員に通報しました。");
+      } else {
+        this.ui.alert("サーバーエラーにより通報できませんでした。");
+      }
+    });
+  }
+  copy(idx) {
+    let upd = this.chats[this.chats.length - idx - 1].upd.toDate();
+    let url = "https;//" + location.host + "/home/room/" + this.data.room.id + "/" + Math.floor(upd.getTime() / 1000);
+    if (execCopy(url)) {
+      this.ui.pop("クリップボードに投稿urlをコピーしました。");
+    } else {
+      this.ui.alert("クリップボードが使用できません。");
+    }
+    function execCopy(string) {
+      var tmp = document.createElement("div");
+      var pre = document.createElement('pre');
+      pre.style.webkitUserSelect = 'auto';
+      pre.style.userSelect = 'auto';
+      tmp.appendChild(pre).textContent = string;
+      var s = tmp.style;
+      s.position = 'fixed';
+      s.right = '200%';
+      document.body.appendChild(tmp);
+      document.getSelection().selectAllChildren(tmp);
+      var result = document.execCommand("copy");
+      document.body.removeChild(tmp);
+      return result;
+    }
   }
   edit(e, idx) {
     e.target.classList.add("tiny");
@@ -511,9 +571,7 @@ export class RoomComponent implements OnInit {
     document.getElementById("header").insertAdjacentHTML('beforeend', '<div id="media"></div>');
     let media = document.getElementById("media");
     if (rtc !== "headset") {
-      let screen = rtc === 'videocam' ?
-        { video: { width: { min: 240, max: 320 }, height: { min: 180, max: 240 } }, audio: true } :
-        { video: false, audio: true };
+      let screen = rtc === 'videocam' ? { video: true, audio: true } : { video: false, audio: true };//{ video: { width: { min: 240, max: 320 }, height: { min: 180, max: 240 } }, audio: true } :
       navigator.mediaDevices.getUserMedia(screen).then(stream => {
         localStream = stream;
         if (rtc === 'videocam') {
@@ -539,6 +597,7 @@ export class RoomComponent implements OnInit {
     this.peer.on('open', () => {
       let peerMode = rtc === 'headset' ? { mode: 'sfu' } : { mode: 'sfu', stream: localStream };
       this.peerRoom = this.peer.joinRoom(this.data.room.id, peerMode);
+      this.socket.emit('rtc', rtc);
       this.peerRoom.on('stream', stream => {
         let pid = stream.peerId.split("_");
         if (pid[1] !== this.data.user.id) {
@@ -621,6 +680,7 @@ export class RoomComponent implements OnInit {
     if (media) {
       media.remove();
     }
+    this.socket.emit('rtc', "");
   }
   ngOnDestroy() {
     this.rtcClose();
@@ -628,10 +688,10 @@ export class RoomComponent implements OnInit {
     if (this.newchatSb) this.newchatSb.unsubscribe();
     if (this.chatSb) this.chatSb.unsubscribe();
     if (this.mentionRoomsSb) this.mentionRoomsSb.unsubscribe();
-    //if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
+    if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
     if (this.paramsSb) this.paramsSb.unsubscribe();
     if (this.rtcSb) this.rtcSb.unsubscribe();
-
+    if (this.allRoomsSb) this.allRoomsSb.unsubscribe();
   }
 }
 

@@ -5,6 +5,7 @@ import { AngularFirestore } from '@angular/fire/firestore';
 import { PhpService } from '../provider/php.service';
 import { UiService } from '../provider/ui.service';
 import { Router } from '@angular/router';
+import { Socket } from 'ngx-socket-io';
 @Component({
   selector: 'app-member',
   templateUrl: './member.component.html',
@@ -14,8 +15,10 @@ export class MemberComponent implements OnInit {
   member;
   black: boolean = false;
   block: Number;
+  online;
   constructor(private navParams: NavParams, private pop: PopoverController, private data: DataService,
-    private php: PhpService, private ui: UiService, private db: AngularFirestore, private router: Router, ) { }
+    private php: PhpService, private ui: UiService, private db: AngularFirestore, private router: Router,
+    private socket: Socket, ) { }
   ngOnInit() {
     this.member = this.navParams.get('member');
     let room = this.data.room;
@@ -28,6 +31,15 @@ export class MemberComponent implements OnInit {
           this.block = res.block;
         }
       });
+    }
+    if (this.navParams.get('search')) {
+      this.socket.removeListener("searchMember");
+      this.socket.on("searchMember", rid => {
+        this.php.get("room", { rid: rid, uid: this.data.user.id, mid: this.member.id }).subscribe((res: any) => {
+          this.online = res;
+        });
+      });
+      this.socket.emit("searchMember", this.member.id);
     }
   }
   detail() {

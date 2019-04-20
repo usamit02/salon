@@ -3,6 +3,7 @@ import { Subject } from 'rxjs';
 import { PhpService } from './php.service';
 import { Socket } from 'ngx-socket-io';
 import { PHPURL } from '../../environments/environment';
+import { FOLDER } from '../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
@@ -11,19 +12,18 @@ export class DataService {
   userSubject = new Subject<User>();
   userState = this.userSubject.asObservable();
   allRooms: Array<Room> = [];
-  allRoomsSubject = new Subject<Array<Room>>();
-  allRoomsState = this.allRoomsSubject.asObservable();
   room = new Room();
   roomSubject = new Subject<Room>();
   roomState = this.roomSubject.asObservable();
   rooms: Array<Room> = [];
+  folder: Room = FOLDER;
   mentionSubject = new Subject();
   popMemberSubject = new Subject();
   mentions = {};
   mentionRooms: Array<any> = [];
   mentionRoomsSubject = new Subject<Array<any>>();
   directUser: User;
-  rtc: string = null;
+  rtc: string = "";
   rtcSubject = new Subject<string>();
   constructor(private php: PhpService, private socket: Socket) { }
   login(user) {
@@ -31,16 +31,11 @@ export class DataService {
       this.php.get("user", { uid: user.uid, na: user.displayName, avatar: user.photoURL }).subscribe((res: any) => {
         if (res.msg === "ok") {
           this.user = res.user;
-          let user = {
-            id: this.user.id, na: this.user.na, avatar: this.user.avatar, no: this.user.no, auth: this.room.auth
-          };
-          this.socket.emit('join', { newRoomId: this.room.id, oldRoomId: "", rtc: "", user: user });
         } else {
           alert(res.msg);
           this.user = new User;
         }
         this.userSubject.next(this.user);
-        console.log("login");
         this.readRooms();
       });
     }
@@ -49,27 +44,29 @@ export class DataService {
     if (this.user.id) {
       this.user = new User;
       this.userSubject.next(this.user);
-      console.log("logout");
-      this.socket.emit('logout', { RoomId: this.room.id });
+      this.socket.emit('logout');
       this.readRooms();
     }
   }
-  readRooms() {
-    this.rtc = null;
-    this.php.get("room", { uid: this.user.id }).subscribe((rooms: any) => {
-      this.allRooms = rooms;
-
-      this.allRoomsSubject.next(rooms);
-      console.log('readRooms');
+  readRooms(): Promise<Array<Room>> {
+    return new Promise((resolve, reject) => {
+      this.php.get("room", { uid: this.user.id }).subscribe((rooms: Array<Room>) => {
+        this.allRooms = rooms;
+        this.rooms = rooms.filter(room => { return room.parent === this.folder.id });
+        resolve(rooms);
+      });
     });
   }
   joinRoom(room: Room) {
     let user = { id: this.user.id, na: this.user.na, avatar: this.user.avatar, no: this.user.no, auth: room.auth };
-    this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, rtc: "", user: user });
+    this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: user });
+    if (room.folder) {
+      this.rooms = this.allRooms.filter(r => { return r.parent === room.id; });
+      this.folder = room;
+    }
     this.room = room;
     this.roomSubject.next(room);
-    this.rtc = null;
-    console.log('joinRoom:' + room.na);
+    this.rtc = "";
   }
   mentionRoom(mentions) {
     let mentionCounts = {}; this.mentions = {};
@@ -103,7 +100,7 @@ export class DataService {
 
 export class User {
   id: string = "";
-  na: string = "未ログイン";
+  na: string = "ビジター";
   avatar: string = PHPURL + "img/avatar.jpg";
   p?: number = 0;
   no?: number = 0;
@@ -117,6 +114,7 @@ export class Room {
   discription?: string = "";
   parent?: number = 0;
   lock?: number = 0;
+  shut?: number = 0;
   idx?: number = 0;
   folder?: boolean = false;
   chat?: boolean = true;

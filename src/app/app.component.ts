@@ -1,7 +1,5 @@
 import { Component } from '@angular/core';
-import { Platform, PopoverController } from '@ionic/angular';
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-import { StatusBar } from '@ionic-native/status-bar/ngx';
+import { PopoverController } from '@ionic/angular';
 import { PhpService } from './provider/php.service';
 import { User, Room, DataService } from './provider/data.service';
 import { Router } from '@angular/router';
@@ -16,27 +14,18 @@ import { FOLDER } from '../environments/environment';
   styleUrls: ['app.component.scss']
 })
 export class AppComponent {
-  folder: Room = FOLDER;
-  rooms: Array<Room> = [];
   bookmk: boolean = false;
   onMembers: Array<User> = [];
   offMembers: Array<User> = [];
-  bufMember: string;
+  searchMembers: Array<User> = [];
   member: string;
   constructor(
-    private platform: Platform, private splashScreen: SplashScreen, private statusBar: StatusBar,
     private data: DataService, private php: PhpService, private router: Router,
-    public pop: PopoverController, private db: AngularFirestore, private ui: UiService, private socket: Socket,
+    private pop: PopoverController, private db: AngularFirestore, private ui: UiService, private socket: Socket,
   ) {
-    this.platform.ready().then(() => {
-      this.statusBar.styleDefault();
-      this.splashScreen.hide();
-    });
   }
   ngOnInit() {
-    this.data.allRoomsState.subscribe((rooms: Array<Room>) => {
-      this.data.rooms = rooms.filter(room => room.parent === this.folder.id);
-    });
+    this.db.firestore.settings({ timestampsInSnapshots: true });
     this.data.roomState.subscribe((room: Room) => {
       this.newChat();
       this.php.get('member', { rid: room.id }).subscribe((members: any) => {
@@ -57,6 +46,8 @@ export class AppComponent {
     this.socket.on("join", users => {
       if (users.length) {
         users.sort((a, b) => {
+          if (a.rtcid < b.rtcid) return 1;
+          if (a.rtcid > b.rtcid) return -1;
           if (a.auth < b.auth) return 1;
           if (a.auth > b.auth) return -1;
           return 0;
@@ -68,10 +59,6 @@ export class AppComponent {
     });
   }
   joinRoom(room: Room) {
-    if (room.folder) {
-      this.data.rooms = this.data.allRooms.filter(r => r.parent === room.id);
-      this.folder = room;
-    }
     this.data.directUser = room.id > 1000000000 ? { id: room.uid, na: room.na, avatar: "" } : { id: "", na: "", avatar: "" };
     if (room.id > 0) {
       this.router.navigate(['/home/room', room.id]);
@@ -80,20 +67,19 @@ export class AppComponent {
     }
   }
   retRoom(home?: boolean) {
-    if (this.folder.id === 1 && this.data.user.id) {
+    if (this.data.folder.id === 1 && this.data.user.id) {
       this.bookmk = !this.bookmk;
+    }
+    if (this.bookmk) {
+      this.data.rooms = this.data.allRooms.filter(room => { return room.bookmark; });
     } else {
-      if (this.bookmk) {
-        this.data.rooms = this.data.allRooms.filter(room => room.bookmark);
+      if (home) {//長押し
+        this.data.folder = FOLDER;
       } else {
-        if (home) {//長押し
-          this.folder = FOLDER;
-        } else {
-          let folder = this.data.allRooms.filter(room => room.id === this.folder.parent);
-          this.folder = folder.length ? folder[0] : FOLDER;
-        }
-        this.data.rooms = this.data.allRooms.filter(room => room.parent === this.folder.id);
+        let folder = this.data.allRooms.filter(room => { return room.id === this.data.folder.parent; });
+        this.data.folder = folder.length ? folder[0] : FOLDER;
       }
+      this.data.rooms = this.data.allRooms.filter(room => { return room.parent === this.data.folder.id; });
       this.newChat();
     }
   }
@@ -115,12 +101,12 @@ export class AppComponent {
     }
   }
   mention() {
-    this.folder = { id: -2, na: "メンション", parent: 1 };
+    this.data.folder = { id: -2, na: "メンション", parent: 1 };
     this.data.rooms = this.data.mentionRooms;
   }
   direct() {
     this.ui.loading();
-    this.folder = { id: -1, na: "ダイレクトメール", parent: 1 };
+    this.data.folder = { id: -1, na: "ダイレクトメール", parent: 1 };
     this.db.collection("direct", ref => ref.where('uid_old', '==', this.data.user.id)).get().subscribe(query => {
       let rooms = [];
       query.forEach(doc => {
@@ -144,39 +130,53 @@ export class AppComponent {
     });
   }
   config() {
-    this.folder = { id: -3, na: "設定", parent: 1 };
+    this.data.folder = { id: -3, na: "設定", parent: 1 };
     this.data.rooms = [
-      { id: -101, na: "通知", parent: -3 }, { id: -102, na: "自己紹介", parent: -3 }
+      { id: -101, na: "通知", parent: -3 }
     ]
   }
   searchMember() {
     if (!this.member.trim()) return;
-    this.bufMember = JSON.stringify({ on: this.onMembers, off: this.offMembers });
     this.onMembers = this.onMembers.filter(member => member.na.indexOf(this.member) !== -1);
     this.offMembers = this.offMembers.filter(member => member.na.indexOf(this.member) !== -1);
     if (!this.onMembers.length && !this.offMembers.length) {
-      this.php.get('member', { search: this.member }).subscribe((members: any) => {
-        this.offMembers = members;
+      this.php.get('member', { search: this.member }).subscribe((members: Array<User>) => {
+        this.searchMembers = members;
       });
     }
   }
   searchMemberClear() {
-    if (this.bufMember) {
-      let members = JSON.parse(this.bufMember);
-      this.onMembers = members.on;
-      this.offMembers = members.off;
-    }
-  }
-  bookmark(room: Room) {
-
+    this.socket.emit("get", this.data.room.id);
+    this.searchMembers = [];
   }
   async popMember(member, event: any) {
+    let search = false;
+    if (this.searchMembers.length) search = true;
     const popover = await this.pop.create({
       component: MemberComponent,
-      componentProps: { member: member },
+      componentProps: { member: member, search: search },
       event: event,
       translucent: true
     });
     return await popover.present();
+  }
+  bookmark(room: Room) {
+    if (this.data.user.id) {
+      this.php.get("bookmark", { uid: this.data.user.id, rid: room.id, bookmark: room.bookmark }).subscribe((res: any) => {
+        if (res.msg = "ok") {
+          let msg = room.bookmark ? "のブックマークを外しました。" : "をブックマークしました。";
+          this.ui.pop("「" + room.na + "」" + msg);
+          room.bookmark = !room.bookmark;
+          let rooms = this.data.rooms.filter(r => { return r.id === room.id; });
+          rooms[0].bookmark = !rooms[0].bookmark;
+          rooms = this.data.allRooms.filter(r => { return r.id === room.id; });
+          rooms[0].bookmark = !rooms[0].bookmark;
+        } else {
+          this.ui.alert(res.msg);
+        }
+      });
+    } else {
+      this.ui.pop("ログインすると長押しでお気に入りの部屋をブックマークに追加できます。");
+    }
   }
 }

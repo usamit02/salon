@@ -4,9 +4,9 @@
       <ion-header>
         <ion-toolbar>
           <ion-item button="true" (click)="retRoom()" (press)="retRoom(true)">
-            <ion-title>{{folder.na}}</ion-title>
-            <ion-icon *ngIf="folder.id!==1" name="exit" item-right></ion-icon>
-            <ion-icon *ngIf="folder.id===1 && bookmk===1" name="bookmark" item-right></ion-icon>
+            <ion-title>{{data.folder.na}}</ion-title>
+            <ion-icon *ngIf="data.folder.id!==1" name="exit"></ion-icon>
+            <ion-icon *ngIf="data.folder.id===1 && bookmk" name="bookmark" color="danger"></ion-icon>
           </ion-item>
         </ion-toolbar>
       </ion-header>
@@ -15,12 +15,12 @@
           <ion-item *ngFor="let room of data.rooms" button="true" (click)="joinRoom(room)" (press)="bookmark(room)">
             <span>{{room.na}}</span><span class="mention">{{room.count}}</span>
             <ion-icon *ngIf="room.folder===1" name="arrow-dropdown"></ion-icon>
-            <ion-icon *ngIf="room.new" name="mail-unread"></ion-icon>
-            <ion-icon *ngIf="room.lock>0" name="lock" item-right></ion-icon>
-            <ion-icon *ngIf="room.bookmark===1" name="bookmark" item-right></ion-icon>
+            <ion-icon *ngIf="room.new" color="light" name="mail-unread" slot="end"></ion-icon>
+            <ion-icon *ngIf="room.lock>0" color="success" name="lock" slot="end"></ion-icon>
+            <ion-icon *ngIf="room.bookmark" color="danger" name="bookmark" slot="end"></ion-icon>
           </ion-item>
         </ion-list>
-        <ion-list *ngIf="folder.id===1 && !bookmk && data.user.id">
+        <ion-list *ngIf="data.folder.id===1 && !bookmk && data.user.id">
           <ion-item *ngIf="data.mentionRooms.length" button="true" (click)="mention()"><span>メンション</span><span class="mention">{{data.mentionRooms.length}}</span></ion-item>
           <ion-item button="true" (click)="direct()"><span>ダイレクト</span></ion-item>
           <ion-item button="true" (click)="config()"><span>設定</span></ion-item>
@@ -32,14 +32,14 @@
         <ion-toolbar>
           <ion-item>
             <ion-searchbar placeholder="メンバー検索" (ionClear)="searchMemberClear()" [(ngModel)]="member" (keyup.enter)="searchMember()"></ion-searchbar>
-            <ion-button clear icon-only item-right (click)="searchMember()">
+            <ion-button (click)="searchMember()">
               <ion-icon name="search"></ion-icon>
             </ion-button>
           </ion-item>
         </ion-toolbar>
       </ion-header>
       <ion-content>
-        <ion-text *ngIf="!onMembers.length && !offMembers.length">誰もいない...</ion-text>
+        <ion-text *ngIf="!onMembers.length && !offMembers.length && !searchMembers.length">誰もいない...</ion-text>
         <ion-text *ngIf="onMembers.length">
           オンライン　{{onMembers.length}}人
         </ion-text>
@@ -55,6 +55,17 @@
         </ion-text>
         <ion-list>
           <ion-item *ngFor="let member of offMembers" button="true" (click)="popMember(member,$event)">
+            <ion-avatar>
+              <img [src]="member.avatar">
+            </ion-avatar>
+            <ion-label>{{member.na}}</ion-label>
+          </ion-item>
+        </ion-list>
+        <ion-text *ngIf="searchMembers.length">
+          検索結果　{{searchMembers.length}}人
+        </ion-text>
+        <ion-list>
+          <ion-item *ngFor="let member of searchMembers" button="true" (click)="popMember(member,$event)">
             <ion-avatar>
               <img [src]="member.avatar">
             </ion-avatar>

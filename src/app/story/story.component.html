@@ -10,11 +10,16 @@
     </div>
     {{story.id}}
   </div>
-  <div *ngIf="room.lock>9" style="width:100%;" text-center align-items-center>
-    <ion-button color="success" (click)="goPayMode(-1)">
-      このサロンに加入する
-    </ion-button>
-  </div>
+  <ng-container *ngIf="room.lock>9">
+    <div *ngIf="room.shut!==1" style="width:100%;" text-center align-items-center>
+      <ion-button color="success" (click)="goPayMode(-1)">
+        このサロンに加入する
+      </ion-button>
+    </div>
+    <ion-item *ngIf="room.shut===1" color="warning" text-center align-items-center>
+      <span>現在募集を停止しています。</span>
+    </ion-item>
+  </ng-container>
   <div *ngIf="room.plan && !room.lock" style="width:100%;" text-center align-items-center>
     <ion-button round color="danger" (click)="leave()">
       このサロンを退会する
