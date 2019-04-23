@@ -69,7 +69,7 @@
             <ion-avatar>
               <img [src]="member.avatar">
             </ion-avatar>
-            <ion-label>{{member.na}}</ion-label>
+            <ion-label [class.black]="member.black">{{member.na}}</ion-label>
           </ion-item>
         </ion-list>
       </ion-content>

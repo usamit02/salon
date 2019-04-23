@@ -36,7 +36,7 @@ export class StoryComponent implements OnInit {
       });
     });
   }
-  goPayMode(payid) {
+  goPayMode(payid) {//「このサロンに加入する」ボタンを押したとき、プランとカード情報を呼んで最終確認ページへ
     if (this.data.user.id) {
       let room = this.room;
       this.payid = payid;
@@ -126,7 +126,7 @@ export class StoryComponent implements OnInit {
   }
   leave() {
     this.ui.confirm("退会", this.room.na + "を退会します。");
-    this.ui.confirmSubject.asObservable().subscribe(res => {
+    let confirm = this.ui.confirmSubject.asObservable().subscribe(res => {
       if (res) {
         this.ui.loading();
         this.php.get("pay/roompay", { uid: this.user.id, rid: this.room.id, ban: this.user.id }).subscribe((res: any) => {
@@ -137,6 +137,7 @@ export class StoryComponent implements OnInit {
             this.ui.alert("退会処理失敗しました。\r\n" + res.error);
           }
         });
+        confirm.unsubscribe();
       }
     });
   }

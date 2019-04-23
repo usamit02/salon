@@ -8,7 +8,18 @@
         </ion-card-header>
         <div [innerHTML]="room.img" (click)="joinRoom(room)"></div>
         <ion-card-content>
-          {{room.discription}}
+          <ion-text (click)="joinRoom(room)">{{room.discription}}</ion-text>
+          <div style="display:flex">
+            <div *ngIf="online[room.id]">
+              <ion-icon name="contact" color="secondary"></ion-icon>{{online[room.id]}}
+            </div>
+            <div *ngIf="room.member">
+              <ion-icon name="contacts" color="success"></ion-icon>{{room.member}}
+            </div>
+            <div *ngIf="room.staff">
+              <ion-icon name="school" color="tertiary"></ion-icon>{{room.staff}}
+            </div>
+          </div>
           <ion-item *ngIf="room.owner" button="true" (click)="ownerClick(room.no)">
             <ion-avatar>
               <ion-img [src]="room.avatar"></ion-img>

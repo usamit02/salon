@@ -10,9 +10,7 @@
   <ion-img [src]="user.avatar"></ion-img>
   <p>{{user.upd|chatdate:'detail'}}から参加、最終ログイン:{{user.rev|chatdate:'detail'}}</p>
   <ion-item-group>
-    <ion-item-divider>
-      <ion-label>参照リンク</ion-label>
-    </ion-item-divider>
+    <p>参照リンク</p>
     <ion-item *ngFor="let link of user.links" button="true" (click)="href(link.url)" (press)="edit(link)">
       <ion-label slot="start">{{link.media}}</ion-label>
       <ion-label slot="end">{{link.na}}</ion-label>
@@ -23,9 +21,7 @@
   </ion-item-group>
   <ion-label color="light" *ngIf="!user.staff.length">スタッフに就任していません</ion-label>
   <ion-item-group *ngIf="user.staff.length">
-    <ion-item-divider>
-      <ion-label>スタッフ</ion-label>
-    </ion-item-divider>
+    <p>スタッフ</p>
     <ion-item *ngFor="let staff of user.staff">
       <ion-item button="true" (click)="joinRoom(staff.rid)">{{staff.room}}</ion-item>
       <ion-label slot="end"> {{staff.class}}に{{staff.upd|chatdate:'detail'}}から就任</ion-label>
@@ -33,9 +29,7 @@
   </ion-item-group>
   <ion-label color="ligth" *ngIf="!user.member.length">メンバーとして参加していません</ion-label>
   <ion-item-group *ngIf="user.member.length">
-    <ion-item-divider>
-      <ion-label>メンバー</ion-label>
-    </ion-item-divider>
+    <p>メンバー</p>
     <ng-container *ngFor="let member of user.member">
       <ion-item *ngIf="member.auth || data.room.auth>=200 || user.id===data.user.id" (press)="joinRoom(member.rid)">
         <ion-item button="true" (click)="joinRoom(member.rid)">{{member.room}}</ion-item>

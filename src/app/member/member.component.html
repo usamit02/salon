@@ -13,23 +13,44 @@
     <ion-item *ngIf="!data.user.id" button="true" (click)="close()">
       <ion-icon name="exit"></ion-icon>戻る
     </ion-item>
+    <ion-item *ngIf="online.id" button="true" (click)="chase()">
+      <ion-icon color="secondary" name="contact"></ion-icon>{{online.na}}
+    </ion-item>
     <ng-container *ngIf="data.user.id">
-      <ion-item *ngIf="data.room.id<1000000000" button="true" (click)="mention()">
-        メンション
-      </ion-item>
-      <ion-item *ngIf="data.room.id<10000000000" button="true" (click)="direct()">
-        ダイレクト
-      </ion-item>
-      <ion-item button="true" (click)="blocking()" color="warning">
-        <span *ngIf="block">通知ブロック解除</span>
-        <span *ngIf="!block">通知ブロック</span>
-      </ion-item>
-      <ion-item *ngIf="(data.room.plan || data.room.applyplan) && data.room.auth >=200 && member.auth <= data.room.auth"
-        button="true" (click)="kick()" color="warning">
-        <span>Kick！</span>
-      </ion-item>
-      <ion-item *ngIf="data.room.auth >=200 && member.auth <= data.room.auth" button="true" color="danger" (click)="ban()">
-        <span>BAN！</span>
+      <ng-container *ngIf="!member.black">
+        <ion-item *ngIf="data.room.id<1000000000" button="true" (click)="mention()">
+          メンション
+        </ion-item>
+        <ion-item *ngIf="data.room.id<10000000000" button="true" (click)="direct()">
+          ダイレクト
+        </ion-item>
+        <ion-item *ngIf="data.user.p && data.user.id!==member.id">
+          <form #giveForm="ngForm" (ngSubmit)="givePoint(giveForm.value)">
+            <ion-input [(ngModel)]="give.txt" name="txt" type="text" #txt="ngModel" minlength="0" maxlength="20"></ion-input>
+            <div style="display:flex">
+              <ion-input [(ngModel)]="give.p" name="p" type="number" #p="ngModel" min="1" max="100000" required></ion-input>
+              P
+              <ion-button color="success" type="submit" slot="end" [disabled]="giveForm.invalid || giveForm.submitted || giveForm.pristine">贈る</ion-button>
+            </div>
+          </form>
+        </ion-item>
+        <ion-item button="true" (click)="blocking()" color="warning">
+          <span *ngIf="block">通知ブロック解除</span>
+          <span *ngIf="!block">通知ブロック</span>
+        </ion-item>
+        <ion-item *ngIf="(data.room.plan || data.room.applyplan) && data.room.auth >=200 && member.auth <= data.room.auth && member.auth"
+          button="true" (click)="kick()" color="warning">
+          <span>Kick！</span>
+        </ion-item>
+        <!--とりあえず簡易的な条件でボタンは出す、押してから本当にBANできるかサーバーに問い合わせる-->
+        <ion-item *ngIf="data.room.auth >=200 && (!member.auth || member.auth <= data.room.auth)" button="true" color="danger"
+          (click)="ban()">
+          <span>BAN！</span>
+        </ion-item>
+      </ng-container>
+      <ion-item *ngIf="member.black && data.room.auth >=200 && (!member.auth || member.auth <= data.room.auth)" button="true"
+        color="danger" (click)="revive()">
+        <span>復活</span>
       </ion-item>
     </ng-container>
   </ion-list>

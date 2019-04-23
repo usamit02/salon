@@ -12,6 +12,7 @@ export class DataService {
   userSubject = new Subject<User>();
   userState = this.userSubject.asObservable();
   allRooms: Array<Room> = [];
+  fullRooms: Array<Room> = [];
   room = new Room();
   roomSubject = new Subject<Room>();
   roomState = this.roomSubject.asObservable();
@@ -36,7 +37,12 @@ export class DataService {
           this.user = new User;
         }
         this.userSubject.next(this.user);
-        this.readRooms();
+        this.readRooms().then(() => {
+          let rooms = this.allRooms.filter(room => { return room.id === this.room.id; });
+          if (rooms.length) {
+            this.joinRoom(rooms[0]);
+          }
+        });
       });
     }
   }
@@ -50,10 +56,11 @@ export class DataService {
   }
   readRooms(): Promise<Array<Room>> {
     return new Promise((resolve, reject) => {
-      this.php.get("room", { uid: this.user.id }).subscribe((rooms: Array<Room>) => {
-        this.allRooms = rooms;
-        this.rooms = rooms.filter(room => { return room.parent === this.folder.id });
-        resolve(rooms);
+      this.php.get("room", { uid: this.user.id }).subscribe((res: any) => {
+        this.allRooms = res.all;
+        this.fullRooms = res.full;
+        this.rooms = res.all.filter(room => { return room.parent === this.folder.id });
+        resolve(res.all);
       });
     });
   }
@@ -107,6 +114,7 @@ export class User {
   upd?: Date;
   rev?: Date;
   direct?: string;
+  black?: number = 0;
 }
 export class Room {
   id: number = 2;
@@ -128,4 +136,6 @@ export class Room {
   count?: number = 0;
   uid?: string = "";
   img?: number = 0;
+  member?: number = 0;
+  staff?: number = 0;
 }

@@ -16,7 +16,14 @@ export class UiService {
     });
     toast.present();
   }
-
+  async popm(msg: string) {
+    const toast = await this.toastController.create({
+      message: msg,
+      position: 'middle',
+      duration: 3000
+    });
+    toast.present();
+  }
   async alert(msg: string) {
     const toast = await this.toastController.create({
       message: msg,
@@ -66,4 +73,5 @@ export class UiService {
     });
     await confirm.present();
   }
+
 }

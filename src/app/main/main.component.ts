@@ -40,12 +40,7 @@ export class MainComponent {
       var newNode = ed.dom.select('#' + endId);
       ed.selection.select(newNode[0]);
     });
-    /*this.db.collection('black').valueChanges().subscribe((data: any) => {
-      if (data.length && data[0].uid === this.data.user.id) {
-        this.logout();
-        alert("KICKまたはBANされたため強制ログアウトします。")
-      }
-    });*/
+    this.socket.removeListener('typing');
     this.socket.on("typing", writer => {
       this.writer = writer;
       setTimeout(() => {
@@ -86,15 +81,9 @@ export class MainComponent {
   ngAfterViewInit() {
     firebase.auth().onAuthStateChanged(user => {
       if (user) {
-        this.db.collection('black', ref => ref.where('uid', "==", user.uid)).get().subscribe(query => {
-          if (query.docs.length) {
-            alert("ブラックリスト入りしてます。ログインできません。");
-          } else {
-            this.data.login(user);
-            let dummy = <HTMLButtonElement>document.getElementById("dummy");
-            dummy.click();
-          }
-        });
+        this.data.login(user);
+        let dummy = <HTMLButtonElement>document.getElementById("dummy");
+        dummy.click();
       } else {
         this.data.logout();
       }
@@ -372,6 +361,19 @@ if (url.indexOf("https://www.google.com/maps/embed?") > 0) {
           this.ui.alert("google MAPのurlを解析できませんでした。");
         }
       }
-
-
-*/
+ /*this.db.collection('black').valueChanges().subscribe((data: any) => {
+      if (data.length && data[0].uid === this.data.user.id) {
+        this.logout();
+        alert("KICKまたはBANされたため強制ログアウトします。")
+      }
+    });
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    */

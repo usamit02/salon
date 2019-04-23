@@ -57,6 +57,18 @@ export class AppComponent {
         this.onMembers = [];
       }
     });
+    this.socket.on("give", data => {
+      if (data.mid === this.data.user.id) {
+        let msg = data.txt ? "\r\n「" + data.txt + "」" : "";
+        this.ui.popm(data.na + "さんから" + data.p + "ポイント贈られました。" + msg);
+      }
+    });
+    this.socket.on("ban", id => {
+      if (id === this.data.user.id) {
+        this.ui.popm("kickまたはBANされたため強制ログアウトします。");
+        this.data.logout();
+      }
+    });
   }
   joinRoom(room: Room) {
     this.data.directUser = room.id > 1000000000 ? { id: room.uid, na: room.na, avatar: "" } : { id: "", na: "", avatar: "" };
