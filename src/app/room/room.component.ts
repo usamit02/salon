@@ -49,7 +49,7 @@ export class RoomComponent implements OnInit {
       if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
       if (user.id) {
         this.init();
-        this.mentionDbSb = this.db.collection('user').doc(this.data.user.id.toString()).collection('mention',
+        this.mentionDbSb = this.db.collection('user').doc(user.id.toString()).collection('mention',
           ref => ref.orderBy('upd', 'desc')).snapshotChanges().subscribe((res: Array<any>) => {
             let data: any = {};
             let mentions = [];
@@ -103,14 +103,14 @@ export class RoomComponent implements OnInit {
       for (let i = 0; i < deleteMentions.length; i++) {
         this.db.collection('user').doc(this.data.user.id.toString()).collection('mention').doc(deleteMentions[i].id).delete();
         console.log("メンション削除" + deleteMentions[i].id + ":" + upds[0] + "<=" + deleteMentions[i].upd.toDate() + ">=" + upds[upds.length - 1]);
-        mentions = mentions.filter(mention => mention.id !== deleteMentions[i].id);
+        mentions = mentions.filter(mention => { return mention.id !== deleteMentions[i].id; });
       }
       if (deleteMentions.length) {
         this.data.mentions[this.data.room.id] = mentions;
-        let mentionRooms = this.data.mentionRooms.filter(mentionRoom => mentionRoom.id === this.data.room.id);
+        let mentionRooms = this.data.mentionRooms.filter(mentionRoom => { return mentionRoom.id === this.data.room.id; });
         mentionRooms[0].count -= deleteMentions.length;
         if (!mentionRooms[0].count) {
-          this.data.mentionRooms = this.data.mentionRooms.filter(mentionRoom => mentionRoom.id !== this.data.room.id);
+          this.data.mentionRooms = this.data.mentionRooms.filter(mentionRoom => { return mentionRoom.id !== this.data.room.id; });
         }
         this.data.mentionRoomsSubject.next(this.data.mentionRooms);
       }
@@ -544,7 +544,7 @@ export class RoomComponent implements OnInit {
   popMember(e, uid) {
     this.php.get("member", { rid: this.data.room.id, uid: uid }).then(res => {
       let member = { id: uid, na: '', avatar: '', auth: 0, payroomid: 0, authroomid: 0 };
-      if (res.member.length) member = res.member[0];
+      if (res.members.length) member = res.members[0];
       this.data.popMemberSubject.next({
         member: member,
         event: e

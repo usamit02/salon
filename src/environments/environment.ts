@@ -18,6 +18,15 @@ export const socketConfig: SocketIoConfig = { url: 'http://localhost:3003', opti
 //export const socketConfig: SocketIoConfig = { url: 'https://www.clife.cf:3003', options: {} };
 //export const socketConfig: SocketIoConfig = { url: 'http://35.193.127.88:3003', options: {} };
 export const FOLDER = { id: 1, na: "ブロガーズギルド", parent: 1, folder: true };
+export const AUTH = {
+  '0': { id: 0, na: "審査待ち", class: 'ready' },
+  '1': { id: 1, na: "メンバー", class: 'member' },
+  '100': { id: 100, na: "アシスタント", class: 'assist' },
+  '200': { id: 200, na: "マネージャー", class: 'manager' },
+  '500': { id: 500, na: "クリエイター", class: 'creator' },
+  '1000': { id: 1000, na: "マスター", class: 'master' },
+  '9000': { id: 9000, na: "オーナー", class: 'owner' }
+};
 export const PHPURL = "http://localhost/public_html/";
 //export const PHPURL ="https://bloggersguild.cf/";
 export const tinyinit = {

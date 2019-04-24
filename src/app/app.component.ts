@@ -7,7 +7,8 @@ import { Socket } from 'ngx-socket-io';
 import { MemberComponent } from './member/member.component';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { UiService } from './provider/ui.service';
-import { FOLDER } from '../environments/environment';
+import { FOLDER, AUTH } from '../environments/environment';
+
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
@@ -19,13 +20,13 @@ export class AppComponent {
   offMembers: Array<User> = [];
   searchMembers: Array<User> = [];
   member: string;
+  auth = AUTH;
   constructor(
     private data: DataService, private php: PhpService, private router: Router,
     private pop: PopoverController, private db: AngularFirestore, private ui: UiService, private socket: Socket,
   ) {
   }
   ngOnInit() {
-    this.db.firestore.settings({ timestampsInSnapshots: true });
     this.data.roomState.subscribe((room: Room) => {
       this.newChat();
       this.php.get('member', { rid: room.id }).then(res => {

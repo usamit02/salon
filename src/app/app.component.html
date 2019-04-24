@@ -19,9 +19,9 @@
             <ion-icon *ngIf="room.lock>0" color="success" name="lock" slot="end"></ion-icon>
             <ion-icon *ngIf="room.bookmark" color="danger" name="bookmark" slot="end"></ion-icon>
           </ion-item>
+          <ion-item *ngIf="data.mentionRooms.length" button="true" (click)="mention()"><span>メンション</span><span class="mention">{{data.mentionRooms.length}}</span></ion-item>
         </ion-list>
         <ion-list *ngIf="data.folder.id===1 && !bookmk && data.user.id">
-          <ion-item *ngIf="data.mentionRooms.length" button="true" (click)="mention()"><span>メンション</span><span class="mention">{{data.mentionRooms.length}}</span></ion-item>
           <ion-item button="true" (click)="direct()"><span>ダイレクト</span></ion-item>
           <ion-item button="true" (click)="config()"><span>設定</span></ion-item>
         </ion-list>
@@ -40,25 +40,35 @@
       </ion-header>
       <ion-content>
         <ion-text *ngIf="!onMembers.length && !offMembers.length && !searchMembers.length">誰もいない...</ion-text>
-        <ion-text *ngIf="onMembers.length">
-          オンライン　{{onMembers.length}}人
-        </ion-text>
+        <ng-container *ngIf="onMembers.length">
+          <ion-icon name="contact" color="secondary"></ion-icon>
+          <ion-text>
+            オンライン　{{onMembers.length}}人
+          </ion-text>
+        </ng-container>
         <ion-list>
           <ion-item *ngFor="let member of onMembers" button="true" (click)="popMember(member,$event)">
             <ion-avatar><img [src]="member.avatar"></ion-avatar>
-            <ion-label>{{member.na}}</ion-label>
+            {{member.na}}
+            <ion-icon *ngIf="member.auth>1" [class]="auth[member.auth].class" name="school"></ion-icon>
+            <ion-icon *ngIf="member.auth===1" name="contacts"></ion-icon>
             <ion-icon [name]="member.rtc" slot="end"></ion-icon>
           </ion-item>
         </ion-list>
-        <ion-text *ngIf="offMembers.length">
-          オフライン　{{offMembers.length}}人
-        </ion-text>
+        <ng-container *ngIf="offMembers.length">
+          <ion-icon name="contact" color="light"></ion-icon>
+          <ion-text>
+            オフライン　{{offMembers.length}}人
+          </ion-text>
+        </ng-container>
         <ion-list>
           <ion-item *ngFor="let member of offMembers" button="true" (click)="popMember(member,$event)">
             <ion-avatar>
               <img [src]="member.avatar">
             </ion-avatar>
-            <ion-label>{{member.na}}</ion-label>
+            {{member.na}}
+            <ion-icon *ngIf="member.auth>1" [class]="auth[member.auth].class" name="school"></ion-icon>
+            <ion-icon *ngIf="member.auth===1" name="contacts"></ion-icon>
           </ion-item>
         </ion-list>
         <ion-text *ngIf="searchMembers.length">

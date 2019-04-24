@@ -7,6 +7,7 @@ import { PhpService } from '../provider/php.service';
 import { UiService } from '../provider/ui.service';
 import { Router } from '@angular/router';
 import { Socket } from 'ngx-socket-io';
+import { AUTH } from '../../environments/environment'
 @Component({
   selector: 'app-member',
   templateUrl: './member.component.html',
@@ -17,6 +18,7 @@ export class MemberComponent implements OnInit {
   give = { p: null, txt: "" };
   block: Number;
   online = { id: 0, na: "" };
+  auth = AUTH;
   constructor(private navParams: NavParams, private pop: PopoverController, private data: DataService,
     private php: PhpService, private ui: UiService, private db: AngularFirestore, private router: Router,
     private socket: Socket, private alertController: AlertController) { }

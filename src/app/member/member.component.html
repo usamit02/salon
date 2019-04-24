@@ -10,7 +10,7 @@
       <ion-icon name="contacts"></ion-icon>メンバー
     </div>
     <div *ngIf="member.auth>1">
-      <ion-icon name="school"></ion-icon>メンバー
+      <ion-icon [class]="auth[member.auth].class" name="school"></ion-icon>{{auth[member.auth].na}}
     </div>
   </ion-toolbar>
 </ion-header>

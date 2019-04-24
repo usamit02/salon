@@ -55,7 +55,7 @@ export class DataService {
   }
   readRooms(): Promise<Array<Room>> {
     return new Promise((resolve, reject) => {
-      this.php.get("room", { uid: this.user.id }, "部屋情報取得中").then(res => {
+      this.php.get("room", { uid: this.user.id }).then(res => {
         this.allRooms = res.all;
         this.fullRooms = res.full;
         this.rooms = res.all.filter(room => { return room.parent === this.folder.id });
@@ -82,11 +82,11 @@ export class DataService {
       this.mentions[rid] = true;
     }
     Object.keys(this.mentions).forEach((key) => {
-      this.mentions[key] = mentions.filter(mention => mention.rid === Number(key));
+      this.mentions[key] = mentions.filter(mention => { return mention.rid === Number(key) });
     });
     this.mentionRooms = [];
     Object.keys(mentionCounts).forEach((key) => {
-      let rooms = this.allRooms.filter(room => room.id === Number(key));
+      let rooms = this.allRooms.filter(room => { return room.id === Number(key) });
       if (rooms.length) {
         this.mentionRooms.push({ id: rooms[0].id, na: rooms[0].na, count: mentionCounts[key] });
       }
