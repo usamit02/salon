@@ -28,14 +28,14 @@ export class AppComponent {
     this.db.firestore.settings({ timestampsInSnapshots: true });
     this.data.roomState.subscribe((room: Room) => {
       this.newChat();
-      this.php.get('member', { rid: room.id }).subscribe((members: any) => {
+      this.php.get('member', { rid: room.id }).then(res => {
         this.offMembers = [];
-        for (let i = 0; i < members.length; i++) {
+        for (let i = 0; i < res.members.length; i++) {
           var f = true;
           for (let j = 0; j < this.onMembers.length; j++) {
-            if (members[i].id === this.onMembers[j].id) f = false;
+            if (res.members[i].id === this.onMembers[j].id) f = false;
           }
-          if (f) this.offMembers.push(members[i]);
+          if (f) this.offMembers.push(res.members[i]);
         }
       });
     });
@@ -95,18 +95,18 @@ export class AppComponent {
       this.newChat();
     }
   }
-  newChat() {
+  newChat() {//未読表示
     let rids = [];
     for (let i = 0; i < this.data.rooms.length; i++) {
       rids.push(this.data.rooms[i].id);
     }
     if (rids.length) {
-      this.php.get('room', { uid: this.data.user.id, rids: JSON.stringify(rids) }).subscribe((res: any) => {
+      this.php.get('room', { uid: this.data.user.id, rids: JSON.stringify(rids) }).then(res => {
         for (let i = 0; i < this.data.rooms.length; i++) {
-          if (this.data.rooms[i].id in res) {
-            let r = res[this.data.rooms[i].id];
-            let upd = 'upd' in r ? new Date(r.upd).getTime() / 1000 : Math.floor(this.data.rooms[i].upd.getTime() / 1000);
-            this.data.rooms[i].new = upd > new Date(r.csd).getTime() / 1000;
+          if (this.data.rooms[i].id in res.cursors) {
+            let cursor = res.cursors[this.data.rooms[i].id];
+            let upd = 'upd' in cursor ? new Date(cursor.upd).getTime() / 1000 : Math.floor(this.data.rooms[i].upd.getTime() / 1000);
+            this.data.rooms[i].new = upd > new Date(cursor.csd).getTime() / 1000;
           }
         }
       });
@@ -117,8 +117,8 @@ export class AppComponent {
     this.data.rooms = this.data.mentionRooms;
   }
   direct() {
-    this.ui.loading();
-    this.data.folder = { id: -1, na: "ダイレクトメール", parent: 1 };
+    this.ui.loading("メッセージ確認中...");
+    this.data.folder = { id: -1, na: "ダイレクトメッセージ", parent: 1 };
     this.db.collection("direct", ref => ref.where('uid_old', '==', this.data.user.id)).get().subscribe(query => {
       let rooms = [];
       query.forEach(doc => {
@@ -152,8 +152,8 @@ export class AppComponent {
     this.onMembers = this.onMembers.filter(member => member.na.indexOf(this.member) !== -1);
     this.offMembers = this.offMembers.filter(member => member.na.indexOf(this.member) !== -1);
     if (!this.onMembers.length && !this.offMembers.length) {
-      this.php.get('member', { search: this.member }).subscribe((members: Array<User>) => {
-        this.searchMembers = members;
+      this.php.get('member', { search: this.member }, "検索中").then(res => {
+        this.searchMembers = res.members;
       });
     }
   }
@@ -174,18 +174,14 @@ export class AppComponent {
   }
   bookmark(room: Room) {
     if (this.data.user.id) {
-      this.php.get("bookmark", { uid: this.data.user.id, rid: room.id, bookmark: room.bookmark }).subscribe((res: any) => {
-        if (res.msg = "ok") {
-          let msg = room.bookmark ? "のブックマークを外しました。" : "をブックマークしました。";
-          this.ui.pop("「" + room.na + "」" + msg);
-          room.bookmark = !room.bookmark;
-          let rooms = this.data.rooms.filter(r => { return r.id === room.id; });
-          rooms[0].bookmark = !rooms[0].bookmark;
-          rooms = this.data.allRooms.filter(r => { return r.id === room.id; });
-          rooms[0].bookmark = !rooms[0].bookmark;
-        } else {
-          this.ui.alert(res.msg);
-        }
+      this.php.get("bookmark", { uid: this.data.user.id, rid: room.id, bookmark: room.bookmark }).then(() => {
+        let msg = room.bookmark ? "のブックマークを外しました。" : "をブックマークしました。";
+        this.ui.pop("「" + room.na + "」" + msg);
+        room.bookmark = !room.bookmark;
+        let rooms = this.data.rooms.filter(r => { return r.id === room.id; });
+        rooms[0].bookmark = !rooms[0].bookmark;
+        rooms = this.data.allRooms.filter(r => { return r.id === room.id; });
+        rooms[0].bookmark = !rooms[0].bookmark;
       });
     } else {
       this.ui.pop("ログインすると長押しでお気に入りの部屋をブックマークに追加できます。");

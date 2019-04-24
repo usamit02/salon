@@ -29,13 +29,12 @@ export class DataService {
   constructor(private php: PhpService, private socket: Socket) { }
   login(user) {
     if (this.user.id !== user.uid) {
-      this.php.get("user", { uid: user.uid, na: user.displayName, avatar: user.photoURL }).subscribe((res: any) => {
-        if (res.msg === "ok") {
-          this.user = res.user;
-        } else {
-          alert(res.msg);
-          this.user = new User;
-        }
+      this.php.get("user", { uid: user.uid, na: user.displayName, avatar: user.photoURL }
+      ).then(res => {
+        this.user = res.user;
+      }).catch(() => {
+        this.user = new User;
+      }).finally(() => {
         this.userSubject.next(this.user);
         this.readRooms().then(() => {
           let rooms = this.allRooms.filter(room => { return room.id === this.room.id; });
@@ -56,7 +55,7 @@ export class DataService {
   }
   readRooms(): Promise<Array<Room>> {
     return new Promise((resolve, reject) => {
-      this.php.get("room", { uid: this.user.id }).subscribe((res: any) => {
+      this.php.get("room", { uid: this.user.id }, "部屋情報取得中").then(res => {
         this.allRooms = res.all;
         this.fullRooms = res.full;
         this.rooms = res.all.filter(room => { return room.parent === this.folder.id });

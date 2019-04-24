@@ -51,7 +51,20 @@ export class UiService {
       setTimeout(() => { this.loader.dismiss(); }, 500)
     }
   }
-  async confirm(header: string, msg: string) {
+  confirm(header: string, msg: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.conf(header, msg);
+      let confirm = this.confirmSubject.asObservable().subscribe(res => {
+        confirm.unsubscribe();
+        if (res) {
+          resolve();
+        } else {
+          reject();
+        }
+      });
+    });
+  }
+  async conf(header: string, msg: string) {
     const confirm = await this.confirmController.create({
       header: header,
       message: msg,

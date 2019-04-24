@@ -2,11 +2,27 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpRequest, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { PHPURL } from '../../environments/environment';
+import { UiService } from '../provider/ui.service';
 @Injectable()
 export class PhpService {
-  constructor(private http: HttpClient) { }
-  get(url: string, params: any): Observable<Object> {
+  constructor(private http: HttpClient, private ui: UiService) { }
+  getm(url: string, params: any): Observable<Object> {
     return this.http.get(PHPURL + url + ".php", { params: params });
+  }
+  get(url: string, params: any, msg?: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (msg) this.ui.loading(msg + "...");
+      let php = this.http.get(PHPURL + url + ".php", { params: params }).subscribe((res: any) => {
+        if (msg) this.ui.loadend();
+        php.unsubscribe();
+        if (res.msg === "ok") {
+          resolve(res);
+        } else {
+          this.ui.alert(res.msg);
+          reject();
+        }
+      });
+    });
   }
   post(url: string, params: any): Observable<Object> {
     let body = new HttpParams;

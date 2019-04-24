@@ -288,7 +288,8 @@ export class MainComponent {
       let match = url.match("https?://[-_.!~*\'()a-zA-Z0-9;/?:@&=+$,%#]+");
       if (match !== null) {
         this.sendable = false;
-        this.php.get('linkcard', { url: url }).subscribe((res: any) => {
+        let php = this.php.getm('linkcard', { url: url }).subscribe((res: any) => {
+          php.unsubscribe();
           if (res.title || res.image) {
             res.url = url;
             this.media.card = res;

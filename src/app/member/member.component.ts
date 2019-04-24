@@ -25,12 +25,8 @@ export class MemberComponent implements OnInit {
     let room = this.data.room;
     let member = this.member;
     if (this.data.user.id) {
-      this.php.get("member", { uid: this.data.user.id, mid: this.member.id }).subscribe((res: any) => {
-        if (!res || res.msg) {
-          alert("ブロック状況の読込に失敗しました。\r\n" + res.msg);
-        } else {
-          this.block = res.block;
-        }
+      this.php.get("member", { uid: this.data.user.id, mid: this.member.id }).then(res => {
+        this.block = res.block;
       });
     }
     if (this.navParams.get('search')) {
@@ -102,15 +98,10 @@ export class MemberComponent implements OnInit {
         buttons: [
           {
             text: 'OK', handler: (data) => {
-              this.php.get("member", { uid: this.data.user.id, mid: this.member.id, point: this.give.p, txt: this.give.txt }).subscribe((res: any) => {
-                if (res.msg === "ok") {
-                  this.socket.emit("give", { mid: this.member.id, p: this.give.p, txt: this.give.txt, na: this.data.user.na });
-                  this.ui.pop(this.member.na + "に" + this.give.p + "Pを贈りました。");
-                } else {
-                  this.ui.alert(res.msg);
-                }
-                this.give.p = null; this.give.txt = "";
-              });
+              this.php.get("member", { uid: this.data.user.id, mid: this.member.id, point: this.give.p, txt: this.give.txt }).then(res => {
+                this.socket.emit("give", { mid: this.member.id, p: this.give.p, txt: this.give.txt, na: this.data.user.na });
+                this.ui.pop(this.member.na + "に" + this.give.p + "Pを贈りました。");
+              }).finally(() => { this.give.p = null; this.give.txt = ""; });
             }
           },
           {
@@ -122,75 +113,52 @@ export class MemberComponent implements OnInit {
     }
   }
   blocking() {
-    //this.ui.loading();    
-    this.php.get("member", { uid: this.data.user.id, mid: this.member.id, block: this.block }).subscribe((res: any) => {
-      //this.ui.loader.dismiss();
-      if (!res || res.msg) {
-        alert("ブロック設定変更に失敗しました。\r\n" + res.msg);
-      } else {
-        let msg = res.block ? "ブロック" : "受付開始"
-        this.ui.pop(this.member.na + "からの通知を" + msg + "しました。");
-        this.block = res.block;
-      }
+    this.php.get("member", { uid: this.data.user.id, mid: this.member.id, block: this.block }).then(res => {
+      let msg = res.block ? "ブロック" : "受付開始"
+      this.ui.pop(this.member.na + "からの通知を" + msg + "しました。");
+      this.block = res.block;
       this.close();
     });
   }
   kick() {//現在の部屋のみのメンバー退会及びスタッフ退職
-    if (this.member.payrid) {//メンバー
-      this.php.get("pay/roompay", { uid: this.member.id, rid: this.member.payrid, ban: this.data.user.id }).subscribe((res: any) => {
-        if (res.msg === 'ok') {
-          this.ui.pop(this.member.na + "を強制退会処理しました。");
-          this.socket.emit('ban', this.member.id);
-        } else {
-          this.ui.alert("退会処理失敗のため" + this.member.na + "をkickできませんでした。\n C-Lifeまでお問合せください。\n" + res.error);
+    this.ui.confirm("Kick!", this.member.na +
+      "は「" + this.data.room.na + "」のメンバー、スタッフをクビになります。恨まれないように。。。").then(() => {
+        if (this.member.payrid) {//メンバー
+          this.php.get("pay/roompay", { uid: this.member.id, rid: this.member.payrid, ban: this.data.user.id }, "処理中").then(res => {
+            this.ui.pop(this.member.na + "を強制退会処理しました。");
+            this.socket.emit('ban', this.member.id);
+          });
         }
-      });
-    }
-    if (this.member.staffs.length) {//スタッフ
-      let sql = "";
-      for (let i = 0; i < this.member.staffs.length; i++) {
-        sql += "DELETE FROM t03staff WHERE uid='" + this.member.id + "' AND rid=" + this.member.staffs[i].rid + ";\n";
-      }
-      this.php.get("owner/save", { sql: sql.substr(0, sql.length - 1) }).subscribe((res: any) => {
-        if (res.msg === 'ok') {
-          this.ui.pop(this.member.na + "を" + this.data.room.na + "のスタッフから外しました。");
-          this.socket.emit('ban', this.member.id);
-        } else {
-          this.ui.alert("データベースエラーのため" + this.member.na + "をkickできませんでした。\n C-Lifeまでお問合せください。");
+        if (this.member.staffs.length) {//スタッフ
+          let sql = "";
+          for (let i = 0; i < this.member.staffs.length; i++) {
+            sql += "DELETE FROM t03staff WHERE uid='" + this.member.id + "' AND rid=" + this.member.staffs[i].rid + ";\n";
+          }
+          this.php.get("owner/save", { sql: sql.substr(0, sql.length - 1) }, "処理中").then(res => {
+            this.ui.pop(this.member.na + "を" + this.data.room.na + "のスタッフから外しました。");
+            this.socket.emit('ban', this.member.id);
+          }).catch(() => {
+            this.ui.alert("データベースエラーのため" + this.member.na + "をkickできませんでした。\n C-Lifeまでお問合せください。");
+          });
         }
+        this.close();
       });
-    }
-    this.close();
   }
   ban() {//アカウントのメンバー退会及びスタッフ退職させ強制ログアウト
-    this.ui.loading();
-    this.php.get("owner/ban", { uid: this.member.id, ban: this.data.user.id }).subscribe((res1: any) => {
+    this.php.get("owner/ban", { uid: this.member.id, ban: this.data.user.id }, "読込中").then(res1 => {
       if (!res1.bossrooms.length && !res1.payrooms.length) {//権限外の役員や会員になっているか調べる
-        this.ui.confirm("BAN!", this.member.na + "のアカウントを凍結します。");
-        let confirm = this.ui.confirmSubject.asObservable().subscribe(res => {
-          if (res) {
-            this.ui.loading();
-            this.php.get("pay/ban", { uid: this.member.id, ban: this.data.user.id }).subscribe((res2: any) => {
-              if (res2.msg === 'ok') {
-                let sql = "UPDATE t02user SET black=1 WHERE id='" + this.member.id + "';\n";
-                for (let i = 0; i < res1.staffrooms.length; i++) {
-                  sql += "DELETE FROM t03staff WHERE uid='" + this.member.id + "' AND rid=" + res1.staffrooms[i].id + ";\n";
-                }
-                this.php.get("owner/save", { sql: sql.substr(0, sql.length - 1) }).subscribe((res3: any) => {
-                  if (res3.msg === "ok") {
-                    this.socket.emit('ban', this.member.id);
-                    this.ui.pop(this.member.na + "をやっつけたぜ。");
-                  } else {
-                    this.ui.alert("データベースエラーによりBAN失敗しました。\n C-Lifeまでお問合せください。");
-                  }
-                });
-              } else {
-                this.ui.alert("退会処理失敗のため" + this.member.na + "をBANできませんでした。\nC-Lifeまでお問合せください。\n" + res2.error);
-              }
-              this.ui.loadend();
+        this.ui.confirm("BAN!", this.member.na + "はメンバー、スタッフを全て強制退会し、アカウントを凍結されます。\r\n恨まれないように。。。").then(() => {
+          this.php.get("pay/ban", { uid: this.member.id, ban: this.data.user.id }, "処理中").then(() => {
+            let sql = "UPDATE t02user SET black=1 WHERE id='" + this.member.id + "';\n";
+            for (let i = 0; i < res1.staffrooms.length; i++) {
+              sql += "DELETE FROM t03staff WHERE uid='" + this.member.id + "' AND rid=" + res1.staffrooms[i].id + ";\n";
+            }
+            this.php.get("owner/save", { sql: sql.substr(0, sql.length - 1) }, "保存中").then(() => {
+              this.socket.emit('ban', this.member.id);
+              this.ui.pop(this.member.na + "をやっつけたぜ。");
+              this.member.black = 1;
             });
-          }
-          confirm.unsubscribe();
+          });
         });
       } else {
         let msg = ""
@@ -208,18 +176,15 @@ export class MemberComponent implements OnInit {
         }
         this.ui.alert(msg);
       }
-      this.ui.loadend();
     });
     this.close();
   }
   revive() {//blackなアカウントを復活させる
-    this.php.get("owner/save", { sql: "UPDATE t02user SET black=0 WHERE id='" + this.member.id + "';" }).subscribe((res: any) => {
-      if (res.msg === "ok") {
-        this.ui.pop(this.member.na + "は蘇った...");
-      } else {
-        this.ui.alert("データベースエラーにより蘇生失敗しました。\n C-Lifeまでお問合せください。");
-      }
+    this.php.get("owner/save", { sql: "UPDATE t02user SET black=0 WHERE id='" + this.member.id + "';" }).then(res => {
+      this.ui.pop(this.member.na + "は蘇った...");
       this.close();
+    }).catch(res => {
+      this.ui.alert("データベースエラーにより蘇生失敗しました。\n C-Lifeまでお問合せください。");
     });
   }
   chase() {//検索したアカウントが現在オンラインな部屋へ移動

@@ -151,7 +151,7 @@ export class RoomComponent implements OnInit {
                     this.content.scrollToBottom(300);
                     this.btmMsg = "";
                     this.data.room.csd = data[0].upd.toDate();
-                    this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(this.data.room.csd) }).subscribe(dummy => { });
+                    this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(this.data.room.csd) });
                   } else {//画面上に最近のチャットが表示されていない
                     this.newUpds.push(data[data.length - 1].upd.toDate());
                   }
@@ -306,7 +306,7 @@ export class RoomComponent implements OnInit {
         let upd = upds[upds.length - 1];//画面上見えてる最新の日付
         if (!this.data.room.csd || new Date(this.data.room.csd).getTime() < upd.getTime()) {
           this.data.room.csd = upd;
-          this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(upd) }).subscribe(dummy => { });
+          this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(upd) });
         }
       }
     }
@@ -456,12 +456,8 @@ export class RoomComponent implements OnInit {
   tip(na, idx) {
     let chat = this.chats[this.chats.length - idx - 1];
     let tip = JSON.stringify({ uid: chat.uid, na: chat.na, txt: chat.txt, upd: chat.upd.toDate() });
-    this.php.get("tip", { rid: this.data.room.id, room: this.data.room.na, uid: this.data.user.id, tiper: this.data.user.na, chat: tip }).subscribe((res: any) => {
-      if (res.msg === 'ok') {
-        this.ui.pop(na + "による問題がある投稿を役員に通報しました。");
-      } else {
-        this.ui.alert("サーバーエラーにより通報できませんでした。");
-      }
+    this.php.get("tip", { rid: this.data.room.id, room: this.data.room.na, uid: this.data.user.id, tiper: this.data.user.na, chat: tip }).then(res => {
+      this.ui.pop(na + "による問題がある投稿を役員に通報しました。");
     });
   }
   copy(idx) {
@@ -546,17 +542,13 @@ export class RoomComponent implements OnInit {
     });
   }
   popMember(e, uid) {
-    this.php.get("member", { rid: this.data.room.id, uid: uid }).subscribe((res: any) => {
-      if (!res || res.error) {
-        alert("データベースエラーによりメンバーの取得に失敗しました。");
-      } else {
-        let member = { id: uid, na: '', avatar: '', auth: 0, payroomid: 0, authroomid: 0 };
-        if (res.length) member = res[0];
-        this.data.popMemberSubject.next({
-          member: member,
-          event: e
-        });
-      }
+    this.php.get("member", { rid: this.data.room.id, uid: uid }).then(res => {
+      let member = { id: uid, na: '', avatar: '', auth: 0, payroomid: 0, authroomid: 0 };
+      if (res.member.length) member = res.member[0];
+      this.data.popMemberSubject.next({
+        member: member,
+        event: e
+      });
     });
   }
   rtcInit() {

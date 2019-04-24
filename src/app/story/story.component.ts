@@ -29,7 +29,7 @@ export class StoryComponent implements OnInit {
     this.storyLoad();
   }
   storyLoad() {
-    this.php.get("story", { uid: this.user.id, rid: this.room.id }).subscribe((res: any) => {
+    this.php.get("story", { uid: this.user.id, rid: this.room.id }).then(res => {
       this.storys = res.main;
       setTimeout(() => {
         twttr.widgets.load();
@@ -40,43 +40,34 @@ export class StoryComponent implements OnInit {
     if (this.data.user.id) {
       let room = this.room;
       this.payid = payid;
-      this.ui.loading("読込中...");
       Payjp.setPublicKey("pk_test_12e1f56f9f92414d7b00af63");
       let plan: any = { uid: this.data.user.id, rid: this.room.id };
       if (payid === -1) plan.pid = this.room.plan;
-      this.php.get("pay/plan", plan).subscribe((res: any) => {
-        this.ui.loadend();
-        if (res.error) {
-          this.ui.alert("プランの読込に失敗しました。再読み込みを試してください。\n" + res.error);
-          this.payid = 0;
-        } else {
-          if (payid === -1) {
-            if (!res.plan.prorate && res.plan.billing_day) {//引き落とし日指定なのに日割りになってない、プラン保存ミス
-              this.ui.alert("データーエラーにより加入できません。\r\nC-Lifeまでお問合せください。");
-              this.payid = 0;
-            } else {
-              if (!res.plan.billing_day && !res.plan.auth_days) {
-                let date = new Date();
-                date.setDate(date.getDate() + res.plan.trial_days);
-                res.plan.billing_day = date.getDate();
-              }
-              this.plan = res.plan;
-              this.card = res.card;
+      this.php.get("pay/plan", plan, "読込中").then(res => {
+        if (payid === -1) {
+          if (!res.plan.prorate && res.plan.billing_day) {//引き落とし日指定なのに日割りになってない、プラン保存ミス
+            this.ui.alert("データーエラーにより加入できません。\r\nC-Lifeまでお問合せください。");
+            this.payid = 0;
+          } else {
+            if (!res.plan.billing_day && !res.plan.auth_days) {
+              let date = new Date();
+              date.setDate(date.getDate() + res.plan.trial_days);
+              res.plan.billing_day = date.getDate();
             }
+            this.plan = res.plan;
+            this.card = res.card;
           }
         }
-      });
+      }).catch(() => { this.payid = 0; })
     } else {
       this.ui.pop("ログインしてください。");
     }
   }
   pay(token: string) {
-    this.ui.loading("支払中...");
     let charge: any = { rid: this.room.id, uid: this.user.id, na: this.user.na, token: token };
     if (this.payid > 0) charge.sid = this.payid;
-    this.php.get("pay/charge", charge).subscribe((res: any) => {
-      this.ui.loadend();
-      if (res.msg === "plan") {//定額課金        
+    this.php.get("pay/charge", charge, "支払中").then(res => {
+      if (res.typ === "plan") {//定額課金        
         this.data.readRooms();
         if (res.plan === 0) {
           this.ui.pop('ようこそ「' + this.room.na + "」へ");
@@ -105,7 +96,7 @@ export class StoryComponent implements OnInit {
             }
           });
         }
-      } else if (res.msg === "charge") {
+      } else if (res.typ === "charge") {
         this.ui.pop("支払い完了しました。コンテンツをお楽しみください。");
         this.storyLoad();
       }
@@ -125,20 +116,10 @@ export class StoryComponent implements OnInit {
     });
   }
   leave() {
-    this.ui.confirm("退会", this.room.na + "を退会します。");
-    let confirm = this.ui.confirmSubject.asObservable().subscribe(res => {
-      if (res) {
-        this.ui.loading();
-        this.php.get("pay/roompay", { uid: this.user.id, rid: this.room.id, ban: this.user.id }).subscribe((res: any) => {
-          this.ui.loadend();
-          if (res.msg === 'ok') {
-            this.ui.pop(this.room.na + "から脱退しました。次回ログインから入室できません。");
-          } else {
-            this.ui.alert("退会処理失敗しました。\r\n" + res.error);
-          }
-        });
-        confirm.unsubscribe();
-      }
-    });
+    this.ui.confirm("退会", this.room.na + "を退会します。").then(() => [
+      this.php.get("pay/roompay", { uid: this.user.id, rid: this.room.id, ban: this.user.id }, "処理中").then(() => {
+        this.ui.pop(this.room.na + "から脱退しました。次回ログインから入室できません。");
+      })
+    ]);
   }
 }

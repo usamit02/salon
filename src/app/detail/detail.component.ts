@@ -21,10 +21,8 @@ export class DetailComponent implements OnInit {
   ngOnInit() {
     this.paramsSb = this.route.params.subscribe(params => {
       if (params.no > 0) {
-        this.php.get('user', { no: params.no }).subscribe((res: any) => {
-          if (res.msg) {
-            alert(res.msg);
-          } else if (res.user) {
+        this.php.get('user', { no: params.no }, "読込中").then(res => {
+          if (res.user) {
             this.user = res.user;
             this.user.staff = res.staff;
             this.user.member = res.member;
@@ -52,13 +50,9 @@ export class DetailComponent implements OnInit {
           sql = "UPDATE t32link SET media='" + data.media + "',na='" + data.na + "',url='" + data.url +
             "' WHERE uid='" + this.user.id + "' AND idx=" + link.idx;
         }
-        this.php.get("owner/save", { sql: sql }).subscribe((res: any) => {
-          if (res.msg === 'ok') {
-            this.ui.pop("参照リンクを更新しました。");
-            this.linkUpdate();
-          } else {
-            this.ui.alert(res.msg);
-          }
+        this.php.get("owner/save", { sql: sql }).then(res => {
+          this.ui.pop("参照リンクを更新しました。");
+          this.linkUpdate();
         });
       }
     });
@@ -75,13 +69,9 @@ export class DetailComponent implements OnInit {
           if (link.idx < this.user.links.length - 1) {
             sql += ";\nUPDATE t32link SET idx=idx-1 WHERE uid='" + this.user.id + "' AND idx>" + link.idx;
           }
-          this.php.get("owner/save", { sql: sql }).subscribe((res: any) => {
-            if (res.msg === 'ok') {
-              this.ui.pop("参照リンクを削除しました。");
-              this.linkUpdate();
-            } else {
-              this.ui.alert(res.msg);
-            }
+          this.php.get("owner/save", { sql: sql }).then(res => {
+            this.ui.pop("参照リンクを削除しました。");
+            this.linkUpdate();
           });
         }
       });
@@ -107,7 +97,8 @@ export class DetailComponent implements OnInit {
     await alert.present();
   }
   linkUpdate() {
-    this.php.get("user", { link: this.user.id }).subscribe((links: any) => {
+    let php = this.php.getm("user", { link: this.user.id }).subscribe((links: any) => {
+      php.unsubscribe();
       this.user.links = links;
     });
   }
@@ -117,26 +108,18 @@ export class DetailComponent implements OnInit {
       buttons: [
         {
           text: 'OK', handler: (data) => {
-            this.php.get("pay/roompay", { uid: this.user.id, rid: member.rid, ok: this.data.user.id }).subscribe((res: any) => {
-              if (res.msg === "ok") {
-                this.ui.pop(this.user.na + "を" + member.room + "に招待。");
-                member.auth = 1;
-                member.class = "メンバー";
-              } else {
-                this.ui.alert(res.error);
-              }
+            this.php.get("pay/roompay", { uid: this.user.id, rid: member.rid, ok: this.data.user.id }).then(res => {
+              this.ui.pop(this.user.na + "を" + member.room + "に招待。");
+              member.auth = 1;
+              member.class = "メンバー";
             });
           }
         },
         {
           text: 'NG', handler: () => {
-            this.php.get("pay/roompay", { uid: this.user.id, rid: member.rid, ban: this.data.user.id }).subscribe((res: any) => {
-              if (res.msg === "ok") {
-                this.ui.pop(this.user.na + "は" + member.room + "に入れない、残念でした。");
-                this.user.member = this.user.member.filter(m => { return m.rid !== member.rid; });
-              } else {
-                this.ui.alert(res.error);
-              }
+            this.php.get("pay/roompay", { uid: this.user.id, rid: member.rid, ban: this.data.user.id }).then(res => {
+              this.ui.pop(this.user.na + "は" + member.room + "に入れない、残念でした。");
+              this.user.member = this.user.member.filter(m => { return m.rid !== member.rid; });
             });
           }
         },

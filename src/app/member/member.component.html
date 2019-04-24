@@ -6,6 +6,12 @@
       </ion-avatar>
       <ion-title>{{member.na}}</ion-title>
     </ion-item>
+    <div *ngIf="member.auth===1">
+      <ion-icon name="contacts"></ion-icon>メンバー
+    </div>
+    <div *ngIf="member.auth>1">
+      <ion-icon name="school"></ion-icon>メンバー
+    </div>
   </ion-toolbar>
 </ion-header>
 <ion-content>
@@ -48,10 +54,12 @@
           <span>BAN！</span>
         </ion-item>
       </ng-container>
-      <ion-item *ngIf="member.black && data.room.auth >=200 && (!member.auth || member.auth <= data.room.auth)" button="true"
-        color="danger" (click)="revive()">
-        <span>復活</span>
-      </ion-item>
+      <ng-container *ngIf="member.black && data.room.auth >=200 && (!member.auth || member.auth <= data.room.auth)">
+        <p>アカウント凍結中</p>
+        <ion-item button="true" color="danger" (click)="revive()">
+          <span>復活</span>
+        </ion-item>
+      </ng-container>
     </ng-container>
   </ion-list>
 </ion-content>
