@@ -8,7 +8,7 @@ import { MemberComponent } from './member/member.component';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { UiService } from './provider/ui.service';
 import { FOLDER, AUTH } from '../environments/environment';
-
+import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
@@ -21,12 +21,14 @@ export class AppComponent {
   searchMembers: Array<User> = [];
   member: string;
   auth = AUTH;
+  mentionDbSb: Subscription;
   constructor(
     private data: DataService, private php: PhpService, private router: Router,
     private pop: PopoverController, private db: AngularFirestore, private ui: UiService, private socket: Socket,
   ) {
   }
   ngOnInit() {
+    this.data.readRooms();
     this.data.roomState.subscribe((room: Room) => {
       this.newChat();
       this.php.get('member', { rid: room.id }).then(res => {
@@ -39,6 +41,23 @@ export class AppComponent {
           if (f) this.offMembers.push(res.members[i]);
         }
       });
+    });
+    this.data.userState.subscribe(user => {
+      if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
+      if (user.id) {
+        this.mentionDbSb = this.db.collection('user').doc(user.id.toString()).collection('mention',
+          ref => ref.orderBy('upd', 'desc')).snapshotChanges().subscribe((res: Array<any>) => {
+            let mention: any = {};
+            let mentions = [];
+            for (let i = 0; i < res.length; i++) {
+              mention = res[i].payload.doc.data();
+              mention.id = res[i].payload.doc.id;
+              mention.rid = Number(mention.rid);
+              mentions.push(mention);
+            }
+            this.data.mentionRoom(mentions);
+          });
+      }
     });
     this.data.popMemberSubject.asObservable().subscribe((e: any) => {
       this.popMember(e.member, e.event);
@@ -116,6 +135,16 @@ export class AppComponent {
   mention() {
     this.data.folder = { id: -2, na: "メンション", parent: 1 };
     this.data.rooms = this.data.mentionRooms;
+  }
+  mentionClear() {
+    this.data.rooms = [];
+    let db = this.db.collection('user').doc(this.data.user.id.toString()).collection('mention');
+    db.get().subscribe(query => {
+      query.forEach(doc => {
+        db.doc(doc.id).delete();
+      });
+      this.data.mentionRooms = [];
+    });
   }
   direct() {
     this.ui.loading("メッセージ確認中...");

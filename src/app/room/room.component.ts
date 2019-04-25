@@ -41,27 +41,14 @@ export class RoomComponent implements OnInit {
     , private php: PhpService, private storage: AngularFireStorage, private socket: Socket, private ui: UiService) { }
   ngOnInit() {
     this.paramsSb = this.route.params.subscribe(params => {
-      this.rid = params.id;
+      this.rid = Number(params.id);
       this.cursor = params.csd ? new Date(Number(params.csd) * 1000) : null;
       this.init();
     });
     this.userSb = this.data.userState.subscribe(user => {
-      if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
-      if (user.id) {
+      this.data.readRooms().then(rooms => {
         this.init();
-        this.mentionDbSb = this.db.collection('user').doc(user.id.toString()).collection('mention',
-          ref => ref.orderBy('upd', 'desc')).snapshotChanges().subscribe((res: Array<any>) => {
-            let data: any = {};
-            let mentions = [];
-            for (let i = 0; i < res.length; i++) {
-              data = res[i].payload.doc.data();
-              data.id = res[i].payload.doc.id;
-              mentions.push(data);
-            }
-            this.data.mentionRoom(mentions);
-          });
-      }
-      this.readRooms(this.data.allRooms, this.rid);
+      });
     });
     this.mentionRoomsSb = this.data.mentionRoomsSubject.asObservable().subscribe(mentionRooms => {
       this.onScrollEnd({ currentTarget: <any>document.getElementById('chatscontent') });
@@ -76,58 +63,31 @@ export class RoomComponent implements OnInit {
     });
   }
   init() {
-    if (this.rid === undefined) {
-      this.data.room = new Room;
-      this.data.joinRoom(this.data.room);
-      this.chatInit();
-    } else if (Number(this.rid) > 1000000000 && this.data.user.id) {//ダイレクト
-      this.chatInit(this.rid);
-      this.data.joinRoom({ id: this.rid, na: this.data.directUser.na + "へメッセージ", chat: true })
-    } else if (this.data.allRooms.length) {
-      this.readRooms(this.data.allRooms, this.rid);
+    if (this.rid > 1000000000) {//ダイレクト
+      if (this.data.user.id) {
+        this.chatInit(this.rid);
+        let na = this.data.directUser ? this.data.directUser.na + "へメッセージ" : "ダイレクト";
+        let room: Room = { id: this.rid, na: na, chat: true };
+        this.data.joinRoom(room);
+      }//ログインしてなければ何もしない    
     } else {
-      this.data.readRooms().then(rooms => {
-        this.readRooms(rooms, this.rid);
-      });
-    }
-  }
-  deleteNotice(upds) {
-    let upd0 = upds[0].getTime(); let upd9 = upds[upds.length - 1].getTime();
-    this.newUpds = this.newUpds.filter(upd => upd.getTime() < upd0 || upd9 < upd.getTime());//新着メッセージ
-    let mentions = this.data.mentions[this.data.room.id.toString()];//メンション
-    if (mentions && mentions.length) {
-      let deleteMentions = mentions.filter(mention => {
-        let upd = mention.upd.toDate().getTime();
-        return upd0 <= upd && upd <= upd9;// console.log(upd0 + "<=" + upd + "<=" + upd9);        
-      });
-      for (let i = 0; i < deleteMentions.length; i++) {
-        this.db.collection('user').doc(this.data.user.id.toString()).collection('mention').doc(deleteMentions[i].id).delete();
-        console.log("メンション削除" + deleteMentions[i].id + ":" + upds[0] + "<=" + deleteMentions[i].upd.toDate() + ">=" + upds[upds.length - 1]);
-        mentions = mentions.filter(mention => { return mention.id !== deleteMentions[i].id; });
-      }
-      if (deleteMentions.length) {
-        this.data.mentions[this.data.room.id] = mentions;
-        let mentionRooms = this.data.mentionRooms.filter(mentionRoom => { return mentionRoom.id === this.data.room.id; });
-        mentionRooms[0].count -= deleteMentions.length;
-        if (!mentionRooms[0].count) {
-          this.data.mentionRooms = this.data.mentionRooms.filter(mentionRoom => { return mentionRoom.id !== this.data.room.id; });
+      let newRoom = new Room;
+      let id = this.rid;
+      do {
+        let parents = this.data.fullRooms.filter(room => { return room.id === id; });
+        if (parents.length) {
+          let targets = this.data.allRooms.filter(room => { return room.id === id; });
+          if (targets.length) {
+            newRoom = targets[0]; break;
+          }
+          id = parents[0].parent;
+        } else {
+          break;
         }
-        this.data.mentionRoomsSubject.next(this.data.mentionRooms);
-      }
-      let mentionTops = mentions.filter(mention => mention.upd.toDate().getTime() < upd0);
-      this.mentionTop = mentionTops.length;
-      let mentionBtms = mentions.filter(mention => mention.upd.toDate().getTime() > upd9);
-      this.mentionBtm = mentionBtms.length;
-      console.log("メンション数" + this.mentionBtm);
-    } else {
-      this.mentionTop = 0; this.mentionBtm = 0;
+      } while (id);
+      this.data.joinRoom(newRoom);
+      if (newRoom.chat) this.chatInit();
     }
-  }
-  readRooms(rooms: Array<Room>, id: number) {
-    let newRooms = rooms.filter(room => { return room.id == id });
-    let newRoom = newRooms.length ? newRooms[0] : new Room;
-    this.data.joinRoom(newRoom);
-    if (newRoom.chat) this.chatInit();
   }
   chatInit(direct?: number) {
     this.chats = []; this.currentY = 0; this.readed = false; this.twitter = false; this.newUpds = [];
@@ -269,7 +229,6 @@ export class RoomComponent implements OnInit {
     function scrollFin(that) {
       that.top.disabled = false; that.btm.disabled = false; that.loading = false;
     }
-
   }
   chatChange() {
     if (this.chatSb) this.chatSb.unsubscribe();
@@ -309,6 +268,38 @@ export class RoomComponent implements OnInit {
           this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(upd) });
         }
       }
+    }
+  }
+  deleteNotice(upds) {
+    let upd0 = upds[0].getTime(); let upd9 = upds[upds.length - 1].getTime();
+    this.newUpds = this.newUpds.filter(upd => upd.getTime() < upd0 || upd9 < upd.getTime());//新着メッセージ
+    let mentions = this.data.mentions[this.data.room.id.toString()];//メンション
+    if (mentions && mentions.length) {
+      let deleteMentions = mentions.filter(mention => {
+        let upd = mention.upd.toDate().getTime();
+        return upd0 <= upd && upd <= upd9;// console.log(upd0 + "<=" + upd + "<=" + upd9);        
+      });
+      for (let i = 0; i < deleteMentions.length; i++) {
+        this.db.collection('user').doc(this.data.user.id.toString()).collection('mention').doc(deleteMentions[i].id).delete();
+        console.log("メンション削除" + deleteMentions[i].id + ":" + upds[0] + "<=" + deleteMentions[i].upd.toDate() + ">=" + upds[upds.length - 1]);
+        mentions = mentions.filter(mention => { return mention.id !== deleteMentions[i].id; });
+      }
+      if (deleteMentions.length) {
+        this.data.mentions[this.data.room.id] = mentions;
+        let mentionRooms = this.data.mentionRooms.filter(mentionRoom => { return mentionRoom.id === this.data.room.id; });
+        mentionRooms[0].count -= deleteMentions.length;
+        if (!mentionRooms[0].count) {
+          this.data.mentionRooms = this.data.mentionRooms.filter(mentionRoom => { return mentionRoom.id !== this.data.room.id; });
+        }
+        this.data.mentionRoomsSubject.next(this.data.mentionRooms);
+      }
+      let mentionTops = mentions.filter(mention => mention.upd.toDate().getTime() < upd0);
+      this.mentionTop = mentionTops.length;
+      let mentionBtms = mentions.filter(mention => mention.upd.toDate().getTime() > upd9);
+      this.mentionBtm = mentionBtms.length;
+      console.log("メンション数" + this.mentionBtm);
+    } else {
+      this.mentionTop = 0; this.mentionBtm = 0;
     }
   }
   currentUpds(contents) {
@@ -393,13 +384,11 @@ export class RoomComponent implements OnInit {
         { text: '通報', icon: 'thumbs-down', handler: () => { this.tip(na, idx) } }];
     }
     if (uid === this.data.user.id || this.data.room.auth > 200) {
-      if (e.target.className === 'chattxt') {
-        buttons.push(
-          { text: '編集', icon: 'brush', handler: () => { this.edit(e, idx); } }
-        );
-      }
       buttons.push(
-        { text: '削除', icon: 'trash', handler: () => { this.delete(e, idx); } }
+        { text: '編集', icon: 'brush', handler: () => { this.edit(idx); } }
+      );
+      buttons.push(
+        { text: '削除', icon: 'trash', handler: () => { this.delete(idx); } }
       );
     }
     buttons.push({ text: 'urlをコピー', icon: 'copy', handler: () => { this.copy(idx) } });
@@ -484,11 +473,16 @@ export class RoomComponent implements OnInit {
       return result;
     }
   }
-  edit(e, idx) {
-    e.target.classList.add("tiny");
-    e.target.contentEditable = true;
-    this.chats[this.chats.length - idx - 1].edit = true;
-    tinymce.init(tinyinit);
+  edit(idx) {
+    let chat = document.getElementById("chat" + idx);
+    let txts = chat.getElementsByClassName('chattxt');
+    if (txts.length) {
+      let txt = <HTMLDivElement>txts[0];
+      txt.classList.add("tiny");
+      txt.contentEditable = 'true';
+      this.chats[this.chats.length - idx - 1].edit = true;
+      tinymce.init(tinyinit);
+    }
   }
   editSend(e, idx) {
     let div = e.currentTarget.parentElement.parentElement.parentElement.getElementsByClassName("chattxt");
@@ -510,22 +504,17 @@ export class RoomComponent implements OnInit {
       }
     });
   }
-  delete(e, idx) {
-    let div = e.target.parentElement.parentElement.getElementsByClassName("chattxt");
-    if (!div || !div.length) {
-      div = e.target.parentElement.parentElement.parentElement.getElementsByClassName("chattxt");
-    }
-    if (!div || !div.length) { console.error("メンション削除処理失敗"); }
+  delete(idx) {
     let upd = this.chats[this.chats.length - idx - 1].upd;
-    let mentions = div[0].getElementsByClassName("mention");
-    if (mentions.length) {
-      for (let i = 0; i < mentions.length; i++) {
-        let uid = mentions[i].id;
-        let db = this.db.collection('user').doc(uid);
-        db.collection('mention', ref => ref.where('upd', "==", upd)).get().subscribe(query => {
-          if (query.docs.length) db.collection('mention').doc(query.docs[0].data().uid).delete();
-        });
-      }
+    let chat = document.getElementById("chat" + idx);
+    let mentions = chat.getElementsByClassName("mention");
+    for (let i = 0; i < mentions.length; i++) {
+      let db = this.db.collection('user').doc(mentions[i].id);
+      db.collection('mention', ref => ref.where('upd', "==", upd)).get().subscribe(query => {
+        if (query.docs.length) {
+          db.collection('mention').doc(query.docs[0].id).delete();
+        };
+      });
     }
     this.dbcon.collection('chat', ref => ref.where('upd', "==", upd)).get().subscribe(query => {
       if (query.docs.length) {
@@ -537,7 +526,7 @@ export class RoomComponent implements OnInit {
         this.dbcon.collection('chat').doc(query.docs[0].id).delete();
         this.chats = this.chats.filter(chat => chat.upd.toDate().getTime() !== upd.toDate().getTime());
       } else {
-        alert('書き込み(' + upd + ')削除に失敗しました。');
+        alert('投稿(' + upd + ')の削除に失敗しました。');
       }
     });
   }

@@ -41,7 +41,7 @@ export const tinyinit = {
   },
   language_url: 'https://bloggersguild.cf/js/ja.js',
   plugins: [
-    'autolink autosave codesample contextmenu link lists advlist table textcolor paste emoticons'
+    'autolink autosave codesample link lists advlist table paste emoticons'
   ],
   toolbar: 'undo redo | forecolor | emoticons styleselect | blockquote link copy paste',
   contextmenu: 'restoredraft | inserttable cell row column deletetable | bullist numlist',

@@ -82,13 +82,18 @@ export class DataService {
       this.mentions[rid] = true;
     }
     Object.keys(this.mentions).forEach((key) => {
-      this.mentions[key] = mentions.filter(mention => { return mention.rid === Number(key) });
+      this.mentions[key] = mentions.filter(mention => { return mention.rid === Number(key); });
     });
     this.mentionRooms = [];
     Object.keys(mentionCounts).forEach((key) => {
-      let rooms = this.allRooms.filter(room => { return room.id === Number(key) });
-      if (rooms.length) {
-        this.mentionRooms.push({ id: rooms[0].id, na: rooms[0].na, count: mentionCounts[key] });
+      let rid = Number(key);
+      if (rid < 1000000000) {
+        let rooms = this.fullRooms.filter(room => { return room.id === rid; });
+        if (rooms.length) {
+          this.mentionRooms.push({ id: rooms[0].id, na: rooms[0].na, count: mentionCounts[key] });
+        }
+      } else {//ダイレクト
+        this.mentionRooms.push({ id: rid, na: this.mentions[key][0].na, count: mentionCounts[key] });
       }
     });
     this.mentionRoomsSubject.next(this.mentionRooms);

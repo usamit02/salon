@@ -44,6 +44,7 @@
       <ion-icon class="yahoo" name="logo-yahoo"></ion-icon>
     </ion-item>
     <div [class.none]="!data.user.id||!data.room.chat">
+      <ion-label *ngIf="writer" id="writer">{{writer}}</ion-label>
       <ion-item>
         <ng-container *ngIf="uploadPercent|async as percent;else sendbox">
           <ion-progress-bar [value]="percent/100"></ion-progress-bar>{{percent|number:'1.0-0'}}%
@@ -72,7 +73,6 @@
             <ion-icon name="ios-send"></ion-icon>
           </ion-button>
         </ng-template>
-        <p id="writer">{{writer}}</p>
       </ion-item>
     </div>
   </ion-toolbar>

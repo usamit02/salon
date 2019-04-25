@@ -7,7 +7,7 @@ import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireStorage } from '@angular/fire/storage';
 import { DataService } from '../provider/data.service';
 import { PhpService } from '../provider/php.service';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { UiService } from '../provider/ui.service';
 import { Socket } from 'ngx-socket-io';
 declare var tinymce;
@@ -25,14 +25,15 @@ export class MainComponent {
   uploadPercent: Observable<number>;
   sendable: boolean = false;
   typing: boolean = true;
+  mentionSb: Subscription;
   constructor(
     private data: DataService, private afAuth: AngularFireAuth, private db: AngularFirestore,
     private actionSheetCtrl: ActionSheetController, private php: PhpService, private storage: AngularFireStorage,
     private ui: UiService, private socket: Socket,
   ) { }
   ngOnInit() {
-    this.data.mentionSubject.asObservable().subscribe((member: any) => {
-      var ed = tinymce.activeEditor;
+    this.mentionSb = this.data.mentionSubject.asObservable().subscribe((member: any) => {
+      var ed = tinymce.activeEditor;//メンバー窓からメンションコマンド打つと投稿書き込み欄に@メンバー名を挿入
       var endId = tinymce.DOM.uniqueId();
       ed.dom.add(ed.getBody(), 'span', { style: 'color:blue;', class: 'mention', id: member.id }, '@' + member.na);
       ed.dom.add(ed.getBody(), 'span', { id: endId }, '&nbsp;');
@@ -229,9 +230,9 @@ export class MainComponent {
     this.db.collection(collection).doc(rid.toString()).collection('chat').add(add).catch(err => { alert("チャット書込みに失敗しました。\r\n" + err); }).then(ref => {
       if (collection === 'direct') {
         this.db.collection('direct').doc(rid.toString()).set({ upd: upd }, { merge: true }).then(() => {
-          this.php.post('send', { uid: uid, mid: this.data.directUser.id, na: na, txt: txt, rid: rid }).subscribe((res: any) => {
-            if (res.msg) { alert(res.msg); }
-          });
+          //this.php.post('send', { uid: uid, mid: this.data.directUser.id, na: na, txt: txt, rid: rid }).subscribe((res: any) => {
+          //  if (res.msg) { alert(res.msg); }//ダイレクトメッセージがあったことをメールで送る
+          //});
         }).catch(err => {
           alert("メール送信に失敗しました。\r\n" + err);
         });
@@ -242,9 +243,9 @@ export class MainComponent {
       }
       let mentions = ed.dom.select('.mention');
       for (let i = 0; i < mentions.length; i++) {
-        this.db.collection('user').doc(mentions[i].id).collection('mention').add({ uid: uid, rid: rid, upd: upd }).then(() => {
+        this.db.collection('user').doc(mentions[i].id).collection('mention').add({ uid: uid, na: na, rid: rid, upd: upd }).then(() => {
           this.php.post('send', { mid: mentions[i].id, uid: uid, na: na, rid: rid, txt: txt }).subscribe((res: any) => {
-            if (res.msg) { alert(res.msg); }
+            if (res.msg) { alert(res.msg); }//メンションがあったことをメールで送る
           });
         }).catch(err => { alert("メンション書込みに失敗しました。\r\n" + err); });
       }
@@ -318,6 +319,7 @@ export class MainComponent {
     this.data.rtc = "";
   }
   ngOnDestroy() {
+    this.mentionSb.unsubscribe();
     this.data.userSubject.unsubscribe();
     this.data.roomSubject.unsubscribe();
   }

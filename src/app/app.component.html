@@ -19,7 +19,11 @@
             <ion-icon *ngIf="room.lock>0" color="success" name="lock" slot="end"></ion-icon>
             <ion-icon *ngIf="room.bookmark" color="danger" name="bookmark" slot="end"></ion-icon>
           </ion-item>
-          <ion-item *ngIf="data.mentionRooms.length" button="true" (click)="mention()"><span>メンション</span><span class="mention">{{data.mentionRooms.length}}</span></ion-item>
+          <ion-button *ngIf="data.folder.id===-2 && data.mentionRooms.length" slot="end" color="warning" (click)="mentionClear()">全て既読にする</ion-button>
+        </ion-list>
+        <ion-list>
+          <ion-item *ngIf="data.mentionRooms.length && data.folder.id!==-2" button="true" (click)="mention()"><span>メンション</span><span
+              class="mention">{{data.mentionRooms.length}}</span></ion-item>
         </ion-list>
         <ion-list *ngIf="data.folder.id===1 && !bookmk && data.user.id">
           <ion-item button="true" (click)="direct()"><span>ダイレクト</span></ion-item>
@@ -51,7 +55,7 @@
             <ion-avatar><img [src]="member.avatar"></ion-avatar>
             {{member.na}}
             <ion-icon *ngIf="member.auth>1" [class]="auth[member.auth].class" name="school"></ion-icon>
-            <ion-icon *ngIf="member.auth===1" name="contacts"></ion-icon>
+            <ion-icon *ngIf="member.auth===1" name="contacts" color="success"></ion-icon>
             <ion-icon [name]="member.rtc" slot="end"></ion-icon>
           </ion-item>
         </ion-list>
@@ -68,7 +72,7 @@
             </ion-avatar>
             {{member.na}}
             <ion-icon *ngIf="member.auth>1" [class]="auth[member.auth].class" name="school"></ion-icon>
-            <ion-icon *ngIf="member.auth===1" name="contacts"></ion-icon>
+            <ion-icon *ngIf="member.auth===1" name="contacts" color="success"></ion-icon>
           </ion-item>
         </ion-list>
         <ion-text *ngIf="searchMembers.length">

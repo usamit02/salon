@@ -24,10 +24,11 @@
     </ion-item>
     <ng-container *ngIf="data.user.id">
       <ng-container *ngIf="!member.black">
-        <ion-item *ngIf="data.room.id<1000000000" button="true" (click)="mention()">
+        <ion-item *ngIf="data.room.id>0" button="true" (click)="mention()">
           メンション
         </ion-item>
-        <ion-item *ngIf="data.room.id<10000000000" button="true" (click)="direct()">
+        <ion-item button="true" (click)="direct()">
+          <!--*ngIf="data.room.id>0&&data.room.id<1000000000" -->
           ダイレクト
         </ion-item>
         <ion-item *ngIf="data.user.p && data.user.id!==member.id">
