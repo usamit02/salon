@@ -22,7 +22,7 @@
           </ion-button>
         </ng-container>
         <ion-button (click)="logout()" color="dark">
-          <ion-icon name="exit"></ion-icon>
+          <ion-icon name="log-out"></ion-icon>
         </ion-button>
       </ng-container>
     </ion-item>
@@ -34,15 +34,8 @@
 <ion-content>
   <router-outlet></router-outlet>
 </ion-content>
-<ion-footer id="footer">
-  <ion-toolbar no-padding>
-    <ion-item *ngIf="!data.user.id" button="true" (click)="login()">
-      ログインしてコミュニケーションを楽しもう
-      <ion-icon class="twitter" name="logo-twitter"></ion-icon>
-      <ion-icon class="facebook" name="logo-facebook"></ion-icon>
-      <ion-icon class="google" name="logo-google"></ion-icon>
-      <ion-icon class="yahoo" name="logo-yahoo"></ion-icon>
-    </ion-item>
+<ion-footer id="footer" *ngIf="data.post">
+  <ion-toolbar>
     <div [class.none]="!data.user.id||!data.room.chat">
       <ion-label *ngIf="writer" id="writer">{{writer}}</ion-label>
       <ion-item>
@@ -78,3 +71,11 @@
   </ion-toolbar>
   <canvas style='display:none;'></canvas>
 </ion-footer>
+<!--
+    <ion-item *ngIf="!data.user.id" button="true" (click)="login()">
+      ログインしてコミュニケーションを楽しもう
+      <ion-icon class="twitter" name="logo-twitter"></ion-icon>
+      <ion-icon class="facebook" name="logo-facebook"></ion-icon>
+      <ion-icon class="google" name="logo-google"></ion-icon>
+      <ion-icon class="yahoo" name="logo-yahoo"></ion-icon>
+    </ion-item>-->

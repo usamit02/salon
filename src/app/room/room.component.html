@@ -3,6 +3,27 @@
 <div id="topmsg" class="msg"><span *ngIf="mentionTop" (click)="noticeClick('mentionTop')" class="mention">メンション↑{{mentionTop}}件</span></div>
 <ion-content [class.none]="!data.room.chat" id="chatscontent" #chatscontent [scrollEvents]="true" (ionScroll)="onScroll($event)"
   (ionScrollEnd)="onScrollEnd($event)">
+  <ion-fab *ngIf="data.user.id" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="fab('post')">
+      <ion-icon name="brush"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+  <ion-fab *ngIf="!data.user.id" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="log-in"></ion-icon>
+    </ion-fab-button>
+    <ion-fab-list side="start">
+      <ion-fab-button (click)="fab('twitter')">
+        <ion-icon name="logo-twitter"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="fab('facebook')">
+        <ion-icon name="logo-facebook"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="fab('google')">
+        <ion-icon name="logo-google"></ion-icon>
+      </ion-fab-button>
+    </ion-fab-list>
+  </ion-fab>
   <ion-infinite-scroll #top position="top" threshold="10px" (ionInfinite)="chatLoad($event,'top')">
     <ion-infinite-scroll-content loadingSpinner="bubbles">
     </ion-infinite-scroll-content>

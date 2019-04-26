@@ -24,7 +24,7 @@
     </ion-item>
     <ng-container *ngIf="data.user.id">
       <ng-container *ngIf="!member.black">
-        <ion-item *ngIf="data.room.id>0" button="true" (click)="mention()">
+        <ion-item *ngIf="data.room.id>0 && data.post" button="true" (click)="mention()">
           メンション
         </ion-item>
         <ion-item button="true" (click)="direct()">

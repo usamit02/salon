@@ -7,24 +7,26 @@ import { PHPURL, FOLDER } from '../../environments/environment';
   providedIn: 'root'
 })
 export class DataService {
-  user = new User();
+  user = new User();//現在ログリンしているユーザー
   userSubject = new Subject<User>();
-  userState = this.userSubject.asObservable();
-  allRooms: Array<Room> = [];
-  fullRooms: Array<Room> = [];
-  room = new Room();
+  userState = this.userSubject.asObservable();//ログイン、ログアウト発火
+  allRooms: Array<Room> = [];//閲覧権限のある部屋
+  fullRooms: Array<Room> = [];//全ての部屋
+  room = new Room();//現在居る部屋
   roomSubject = new Subject<Room>();
-  roomState = this.roomSubject.asObservable();
-  rooms: Array<Room> = [];
-  folder: Room = FOLDER;
-  popMemberSubject = new Subject();
-  mentions;
-  mentionSubject = new Subject();
-  mentionRooms: Array<MentionRoom> = [];
-  mentionRoomsSubject = new Subject<Array<MentionRoom>>();
-  directUser: User;
-  rtc: string = "";
-  rtcSubject = new Subject<string>();
+  roomState = this.roomSubject.asObservable();//部屋移動発火
+  rooms: Array<Room> = [];//部屋一覧に表示される部屋
+  folder: Room = FOLDER;//部屋一覧の上部に表示される親部屋
+  post: boolean;//fabボタンの状態
+  fabSubject = new Subject<string>();
+  popMemberSubject = new Subject();//アバタークリック発火
+  mentions;//受領したメンション一覧、key=room.id
+  mentionSubject = new Subject();//メンション受領発火
+  mentionRooms: Array<MentionRoom> = [];//未読メンション部屋一覧
+  mentionRoomsSubject = new Subject<Array<MentionRoom>>();//未読メンションに変化発火
+  directUser: User;//現在のダイレクトメッセージの相手
+  rtc: string = "";//WebRTC接続状態
+  rtcSubject = new Subject<string>();//WebRTC接続状態変化発火
   constructor(private php: PhpService, private socket: Socket) { }
   login(user) {
     if (this.user.id !== user.uid) {
@@ -52,7 +54,7 @@ export class DataService {
       this.readRooms();
     }
   }
-  readRooms(): Promise<Array<Room>> {
+  readRooms(): Promise<Array<Room>> {//部屋情報をサーバーから取得
     return new Promise((resolve, reject) => {
       this.php.get("room", { uid: this.user.id }).then(res => {
         this.allRooms = res.all;
@@ -62,7 +64,7 @@ export class DataService {
       });
     });
   }
-  joinRoom(room: Room) {
+  joinRoom(room: Room) {//部屋移動
     let user = { id: this.user.id, na: this.user.na, avatar: this.user.avatar, no: this.user.no, auth: room.auth };
     this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: user });
     if (room.folder) {
@@ -73,7 +75,7 @@ export class DataService {
     this.roomSubject.next(room);
     this.rtc = "";
   }
-  mentionRoom(mentions: Array<Mention>) {
+  mentionRoom(mentions: Array<Mention>) {//メンション初回読み込み、変化時
     let mentionCounts = {}; this.mentions = {};
     for (let i = 0; i < mentions.length; i++) {
       let rid = mentions[i].rid;

@@ -45,8 +45,8 @@ export class AppComponent {
     this.data.userState.subscribe(user => {//ログイン、ログアウト時
       if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
       this.data.mentions = {}; this.data.mentionRooms = [];
-      if (user.id) {//ログイン}
-        let mentions: Array<Mention> = []; let mentionCounts = {};
+      if (user.id) {//ログイン        
+        let mentions: Array<Mention> = [];
         let db = this.db.collection('user').doc(user.id.toString());
         db.collection('mention').get().subscribe(query => {
           let mention;

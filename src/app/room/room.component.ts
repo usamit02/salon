@@ -663,6 +663,9 @@ export class RoomComponent implements OnInit {
     }
     this.socket.emit('rtc', "");
   }
+  fab(button) {
+    this.data.fabSubject.next(button);
+  }
   ngOnDestroy() {
     this.rtcClose();
     if (this.userSb) this.userSb.unsubscribe();
