@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { PopoverController } from '@ionic/angular';
 import { PhpService } from './provider/php.service';
-import { User, Room, DataService } from './provider/data.service';
+import { User, Room, Mention, DataService } from './provider/data.service';
 import { Router } from '@angular/router';
 import { Socket } from 'ngx-socket-io';
 import { MemberComponent } from './member/member.component';
@@ -28,9 +28,9 @@ export class AppComponent {
   ) {
   }
   ngOnInit() {
-    this.data.readRooms();
-    this.data.roomState.subscribe((room: Room) => {
-      this.newChat();
+    this.data.readRooms();//部屋一覧読込
+    this.data.roomState.subscribe((room: Room) => {//部屋移動時
+      this.newChat();//未読表示
       this.php.get('member', { rid: room.id }).then(res => {
         this.offMembers = [];
         for (let i = 0; i < res.members.length; i++) {
@@ -42,13 +42,25 @@ export class AppComponent {
         }
       });
     });
-    this.data.userState.subscribe(user => {
+    this.data.userState.subscribe(user => {//ログイン、ログアウト時
       if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
-      if (user.id) {
-        this.mentionDbSb = this.db.collection('user').doc(user.id.toString()).collection('mention',
-          ref => ref.orderBy('upd', 'desc')).snapshotChanges().subscribe((res: Array<any>) => {
-            let mention: any = {};
-            let mentions = [];
+      this.data.mentions = {}; this.data.mentionRooms = [];
+      if (user.id) {//ログイン}
+        let mentions: Array<Mention> = []; let mentionCounts = {};
+        let db = this.db.collection('user').doc(user.id.toString());
+        db.collection('mention').get().subscribe(query => {
+          let mention;
+          query.forEach(doc => {
+            mention = doc.data();
+            mention.id = doc.id;
+            mention.rid = Number(mention.rid);
+            mentions.push(mention);
+          });
+          this.data.mentionRoom(mentions);
+        });
+        this.mentionDbSb = db.collection('mention', ref => ref.orderBy('upd', 'desc')).
+          snapshotChanges().subscribe((res: Array<any>) => {//メンション受領、既読削除、投稿削除で発火
+            mentions = []; let mention: Mention = new Mention;
             for (let i = 0; i < res.length; i++) {
               mention = res[i].payload.doc.data();
               mention.id = res[i].payload.doc.id;
@@ -59,11 +71,11 @@ export class AppComponent {
           });
       }
     });
-    this.data.popMemberSubject.asObservable().subscribe((e: any) => {
+    this.data.popMemberSubject.asObservable().subscribe((e: any) => {//アバタークリックで発火
       this.popMember(e.member, e.event);
     });
     this.socket.connect();
-    this.socket.on("join", users => {
+    this.socket.on("join", users => {//誰かが部屋移動時
       if (users.length) {
         users.sort((a, b) => {
           if (a.rtcid < b.rtcid) return 1;
@@ -77,20 +89,20 @@ export class AppComponent {
         this.onMembers = [];
       }
     });
-    this.socket.on("give", data => {
+    this.socket.on("give", data => {//投げ銭受領
       if (data.mid === this.data.user.id) {
         let msg = data.txt ? "\r\n「" + data.txt + "」" : "";
         this.ui.popm(data.na + "さんから" + data.p + "ポイント贈られました。" + msg);
       }
     });
-    this.socket.on("ban", id => {
+    this.socket.on("ban", id => {//誰かにKick,Banされた
       if (id === this.data.user.id) {
         this.ui.popm("kickまたはBANされたため強制ログアウトします。");
         this.data.logout();
       }
     });
   }
-  joinRoom(room: Room) {
+  joinRoom(room: Room) {//部屋移動時
     this.data.directUser = room.id > 1000000000 ? { id: room.uid, na: room.na, avatar: "" } : { id: "", na: "", avatar: "" };
     if (room.id > 0) {
       this.router.navigate(['/home/room', room.id]);
@@ -98,20 +110,21 @@ export class AppComponent {
       this.router.navigate(['/notify']);
     }
   }
-  retRoom(home?: boolean) {
+  retRoom(home?: boolean) {//部屋一覧の親ボタン押したとき
     if (this.data.folder.id === 1 && this.data.user.id) {
       this.bookmk = !this.bookmk;
     }
     if (this.bookmk) {
       this.data.rooms = this.data.allRooms.filter(room => { return room.bookmark; });
     } else {
-      if (home) {//長押し
+      if (home) {//長押しでルートに戻る
         this.data.folder = FOLDER;
       } else {
         let folder = this.data.allRooms.filter(room => { return room.id === this.data.folder.parent; });
         this.data.folder = folder.length ? folder[0] : FOLDER;
       }
       this.data.rooms = this.data.allRooms.filter(room => { return room.parent === this.data.folder.id; });
+      this.router.navigate(['/home/room', this.data.folder.id]);
       this.newChat();
     }
   }

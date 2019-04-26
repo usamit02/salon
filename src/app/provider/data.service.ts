@@ -2,8 +2,7 @@ import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { PhpService } from './php.service';
 import { Socket } from 'ngx-socket-io';
-import { PHPURL } from '../../environments/environment';
-import { FOLDER } from '../../environments/environment';
+import { PHPURL, FOLDER } from '../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
@@ -18,11 +17,11 @@ export class DataService {
   roomState = this.roomSubject.asObservable();
   rooms: Array<Room> = [];
   folder: Room = FOLDER;
-  mentionSubject = new Subject();
   popMemberSubject = new Subject();
-  mentions = {};
-  mentionRooms: Array<any> = [];
-  mentionRoomsSubject = new Subject<Array<any>>();
+  mentions;
+  mentionSubject = new Subject();
+  mentionRooms: Array<MentionRoom> = [];
+  mentionRoomsSubject = new Subject<Array<MentionRoom>>();
   directUser: User;
   rtc: string = "";
   rtcSubject = new Subject<string>();
@@ -74,7 +73,7 @@ export class DataService {
     this.roomSubject.next(room);
     this.rtc = "";
   }
-  mentionRoom(mentions) {
+  mentionRoom(mentions: Array<Mention>) {
     let mentionCounts = {}; this.mentions = {};
     for (let i = 0; i < mentions.length; i++) {
       let rid = mentions[i].rid;
@@ -142,4 +141,16 @@ export class Room {
   img?: number = 0;
   member?: number = 0;
   staff?: number = 0;
+}
+export class Mention {
+  public id: string;
+  public rid: number;
+  public uid: string;
+  public na: string;
+  public upd: Date;
+}
+export class MentionRoom {
+  public id: number;
+  public na: string;
+  public count: number;
 }
