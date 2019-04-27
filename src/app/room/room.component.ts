@@ -9,7 +9,7 @@ import { PhpService } from '../provider/php.service';
 import { tinyinit } from '../../environments/environment';
 import { Socket } from 'ngx-socket-io';
 import { UiService } from '../provider/ui.service';
-declare var tinymce; declare var twttr; declare var Peer: any;
+declare var tinymce; declare var twttr;
 @Component({
   selector: 'app-room',
   templateUrl: './room.component.html',
@@ -32,11 +32,8 @@ export class RoomComponent implements OnInit {
   currentY: number = 0;
   cursor: Date = null;
   twitter: boolean = false;
-  rtc: string;
-  peer;
-  peerRoom;
   mentionRoomsSb: Subscription; mentionDbSb: Subscription; newchatSb: Subscription; chatSb: Subscription;
-  paramsSb: Subscription; userSb: Subscription; rtcSb: Subscription; allRoomsSb: Subscription;
+  paramsSb: Subscription; userSb: Subscription; allRoomsSb: Subscription;
   constructor(private actionSheetCtrl: ActionSheetController, private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
     , private php: PhpService, private storage: AngularFireStorage, private socket: Socket, private ui: UiService) { }
   ngOnInit() {
@@ -52,14 +49,6 @@ export class RoomComponent implements OnInit {
     });
     this.mentionRoomsSb = this.data.mentionRoomsSubject.asObservable().subscribe(mentionRooms => {
       this.onScrollEnd({ currentTarget: <any>document.getElementById('chatscontent') });
-    });
-    this.rtcSb = this.data.rtcSubject.asObservable().subscribe((rtc: string) => {
-      this.rtc = rtc;
-      if (rtc) {
-        this.rtcInit();
-      } else {
-        this.rtcClose();
-      }
     });
   }
   init() {
@@ -540,141 +529,13 @@ export class RoomComponent implements OnInit {
       });
     });
   }
-  rtcInit() {
-    const rtc: string = this.rtc;
-    let myVideoPeerId: string;
-    let yourVideoPeerId: string;
-    let audioPeerId: string;
-    let localStream: MediaStream;
-    let myVideo: HTMLVideoElement;
-    let yourVideo: HTMLVideoElement;
-    let audio: HTMLAudioElement;
-    document.getElementById("header").insertAdjacentHTML('beforeend', '<div id="media"></div>');
-    let media = document.getElementById("media");
-    if (rtc !== "headset") {
-      let screen = rtc === 'videocam' ? { video: true, audio: true } : { video: false, audio: true };//{ video: { width: { min: 240, max: 320 }, height: { min: 180, max: 240 } }, audio: true } :
-      navigator.mediaDevices.getUserMedia(screen).then(stream => {
-        localStream = stream;
-        if (rtc === 'videocam') {
-          media.insertAdjacentHTML('beforeend', '<video id="myVideo"></video>');
-          myVideo = <HTMLVideoElement>document.getElementById('myVideo');
-          myVideo.srcObject = stream;
-          myVideo.onloadedmetadata = (e) => {
-            setTimeout(() => {
-              myVideo.muted = true;
-              //this.content.resize();
-            }, 1000);
-          };
-        }
-      }
-      ).catch(err => {
-        alert("ビデオカメラが接続されていません。");
-      });
-    }
-    this.peer = new Peer(rtc + "_" + this.data.user.id, {
-      key: '11d26de3-711f-4a5f-aa60-30142aeb70d9',
-      debug: 3
-    });
-    this.peer.on('open', () => {
-      let peerMode = rtc === 'headset' ? { mode: 'sfu' } : { mode: 'sfu', stream: localStream };
-      this.peerRoom = this.peer.joinRoom(this.data.room.id, peerMode);
-      this.socket.emit('rtc', rtc);
-      this.peerRoom.on('stream', stream => {
-        let pid = stream.peerId.split("_");
-        if (pid[1] !== this.data.user.id) {
-          if (pid[0] === "mic") {
-            media.insertAdjacentHTML('beforeend', '<audio id="audio"></audio>');
-            audio = <HTMLAudioElement>document.getElementById('audio');
-            audio.srcObject = stream;
-            audioPeerId = stream.peerId;
-            audio.play();
-          } else if (pid[0] === "videocam") {
-            if (!myVideo) {
-              media.insertAdjacentHTML('beforeend', '<video id="myVideo"></video>');
-              myVideo = <HTMLVideoElement>document.getElementById('myVideo');
-              myVideo.srcObject = stream;
-              myVideoPeerId = stream.peerId;
-              myVideo.onloadedmetadata = (e) => {
-                setTimeout(() => {
-                  myVideo.play();
-                  //this.content.resize();
-                }, 1000);
-              };
-            } else {
-              if (!yourVideo) {
-                media.insertAdjacentHTML('beforeend', '<video id="yourVideo"></video>');
-                yourVideo = <HTMLVideoElement>document.getElementById('yourVideo');
-                yourVideo.srcObject = stream;
-                yourVideoPeerId = stream.peerId;
-                yourVideo.onloadedmetadata = (e) => {
-                  setTimeout(() => {
-                    yourVideo.play();
-                    //this.content.resize();
-                  }, 1000);
-                };
-              }
-            }
-          }
-        }
-      });
-      this.peerRoom.on('peerLeave', peerId => {
-        if (myVideo && myVideoPeerId == peerId) {
-          myVideo.pause(); myVideo.srcObject = undefined; myVideoPeerId = "";
-        }
-        if (yourVideo && yourVideoPeerId == peerId) {
-          yourVideo.pause(); yourVideo.srcObject = undefined; yourVideoPeerId = "";
-        }
-        if (audio && audioPeerId == peerId) {
-          audio.pause(); audio.srcObject = undefined; audioPeerId = "";
-        }
-      });
-      this.peerRoom.on('removeStream', stream => {
-      });
-      this.peerRoom.on('close', () => {
-        if (myVideo) {
-          myVideo.pause(); myVideo.srcObject = undefined; myVideoPeerId = "";
-        }
-        if (yourVideo) {
-          yourVideo.pause(); yourVideo.srcObject = undefined; yourVideoPeerId = "";
-        }
-        if (audio) {
-          audio.pause(); audio.srcObject = undefined; audioPeerId = "";
-        }
-        localStream = undefined;
-        this.peer.disconnect();
-      });
-    });
-    this.peer.on('error', err => {
-      alert(err.type + ':' + err.message);
-    });
-    this.peer.on('close', () => {
-    });
-    this.peer.on('disconnected', () => {
-      //this.router.navigate(['/home/room', this.params.id]);
-    });
-  }
-  rtcClose() {
-    if (this.peerRoom) {
-      this.peerRoom.close();
-    }
-    let media = document.getElementById("media");
-    if (media) {
-      media.remove();
-    }
-    this.socket.emit('rtc', "");
-  }
-  fab(button) {
-    this.data.fabSubject.next(button);
-  }
   ngOnDestroy() {
-    this.rtcClose();
     if (this.userSb) this.userSb.unsubscribe();
     if (this.newchatSb) this.newchatSb.unsubscribe();
     if (this.chatSb) this.chatSb.unsubscribe();
     if (this.mentionRoomsSb) this.mentionRoomsSb.unsubscribe();
     if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
     if (this.paramsSb) this.paramsSb.unsubscribe();
-    if (this.rtcSb) this.rtcSb.unsubscribe();
     if (this.allRoomsSb) this.allRoomsSb.unsubscribe();
   }
 }

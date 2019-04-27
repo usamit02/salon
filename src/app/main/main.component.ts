@@ -24,6 +24,8 @@ export class MainComponent {
   uploadPercent: Observable<number>;
   sendable: boolean = false;
   typing: boolean = true;
+  head: boolean = false;
+  rtc: string;
   mentionSb: Subscription; fabSb: Subscription;
   constructor(
     private data: DataService, private afAuth: AngularFireAuth, private db: AngularFirestore,
@@ -39,59 +41,6 @@ export class MainComponent {
       ed.focus();
       var newNode = ed.dom.select('#' + endId);
       ed.selection.select(newNode[0]);
-    });
-    this.fabSb = this.data.fabSubject.asObservable().subscribe((button: string) => {
-      if (button === "post") {
-        this.data.post = !this.data.post;
-        if (this.data.post) {
-          setTimeout(() => {
-            tinymce.init({
-              selector: ".tiny",
-              menubar: false,
-              inline: true,
-              //theme: 'inlite',
-              mobile: {
-                theme: 'mobile',
-                plugins: ['autosave', 'lists', 'autolink'],
-                toolbar: ['undo', 'bold', 'italic', 'styleselect', 'emoticons']
-              },
-              language_url: 'https://bloggersguild.cf/js/ja.js',
-              plugins: [
-                'autolink autosave codesample link lists advlist table paste emoticons'
-              ],
-              toolbar: 'undo redo | forecolor | emoticons styleselect | blockquote link copy paste',
-              contextmenu: 'restoredraft | inserttable cell row column deletetable | bullist numlist',
-              forced_root_block: false, allow_conditional_comments: true, allow_html_in_named_anchor: true, allow_unsafe_link_target: true,
-              setup: editor => {
-                editor.on('NodeChange KeyDown Paste Change', e => {
-                  this.sendable = true;
-                  if (this.typing) {
-                    this.socket.emit('typing', this.data.user.na);
-                    this.typing = false;
-                    setTimeout(() => {
-                      this.typing = true;
-                    }, 2000);
-                  }
-                });
-              }
-            });
-          }, 1000);
-        } else {
-          tinymce.activeEditor.setContent('');
-        }
-      } else {
-        let provider: auth.AuthProvider;
-        if (button === "twitter") {
-          provider = new firebase.auth.TwitterAuthProvider();
-        } else if (button === "facebook") {
-          provider = new firebase.auth.FacebookAuthProvider();
-        } else if (button === "google") {
-          provider = new firebase.auth.GoogleAuthProvider();
-        }
-        this.afAuth.auth.signInWithPopup(provider).catch(reason => {
-          this.ui.pop(button + "のログインに失敗しました。");
-        });
-      }
     });
     this.socket.removeListener('typing');
     this.socket.on("typing", writer => {
@@ -111,6 +60,7 @@ export class MainComponent {
       } else {
         this.data.logout();
       }
+      this.rtc = "";
     });
   }
   logout() {
@@ -283,13 +233,64 @@ export class MainComponent {
   twitterPress() {
     window.open("https://twitter.com/");
   }
-  rtc(action) {
-    this.data.rtcSubject.next(action);
-    this.data.rtc = action;
+  rtcOpen(action) {
+    this.rtc = action;
   }
-  closeRtc() {
-    this.data.rtcSubject.next("");
-    this.data.rtc = "";
+  rtcClose() {
+    this.rtc = "";
+  }
+  fab(button) {
+    if (button === "post") {
+      this.data.post = !this.data.post;
+      if (this.data.post) {
+        setTimeout(() => {
+          tinymce.init({
+            selector: ".tiny",
+            menubar: false,
+            inline: true,
+            //theme: 'inlite',
+            mobile: {
+              theme: 'mobile',
+              plugins: ['autosave', 'lists', 'autolink'],
+              toolbar: ['undo', 'bold', 'italic', 'styleselect', 'emoticons']
+            },
+            language_url: 'https://bloggersguild.cf/js/ja.js',
+            plugins: [
+              'autolink autosave codesample link lists advlist table paste emoticons'
+            ],
+            toolbar: 'undo redo | forecolor | emoticons styleselect | blockquote link copy paste',
+            contextmenu: 'restoredraft | inserttable cell row column deletetable | bullist numlist',
+            forced_root_block: false, allow_conditional_comments: true, allow_html_in_named_anchor: true, allow_unsafe_link_target: true,
+            setup: editor => {
+              editor.on('NodeChange KeyDown Paste Change', e => {
+                this.sendable = true;
+                if (this.typing) {
+                  this.socket.emit('typing', this.data.user.na);
+                  this.typing = false;
+                  setTimeout(() => {
+                    this.typing = true;
+                  }, 2000);
+                }
+              });
+            }
+          });
+        }, 1000);
+      } else {
+        tinymce.activeEditor.setContent('');
+      }
+    } else {
+      let provider: auth.AuthProvider;
+      if (button === "twitter") {
+        provider = new firebase.auth.TwitterAuthProvider();
+      } else if (button === "facebook") {
+        provider = new firebase.auth.FacebookAuthProvider();
+      } else if (button === "google") {
+        provider = new firebase.auth.GoogleAuthProvider();
+      }
+      this.afAuth.auth.signInWithPopup(provider).catch(reason => {
+        this.ui.pop(button + "のログインに失敗しました。");
+      });
+    }
   }
   ngOnDestroy() {
     this.fabSb.unsubscribe();

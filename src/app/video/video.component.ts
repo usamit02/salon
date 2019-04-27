@@ -1,10 +1,8 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { IonContent } from '@ionic/angular';
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Subscription } from 'rxjs';
 import { DataService } from '../provider/data.service';
-import { UiService } from '../provider/ui.service';
-import { Router } from '@angular/router';
+import { Socket } from 'ngx-socket-io';
+import { Subscription } from 'rxjs';
 declare var Peer: any;
 @Component({
   selector: 'app-video',
@@ -12,26 +10,26 @@ declare var Peer: any;
   styleUrls: ['./video.component.scss']
 })
 export class VideoComponent implements OnInit {
-  @ViewChild(IonContent) content: IonContent;
-  paramsSb: Subscription;
-  params;
+  @Input() rtc: string;
+  @Output() stop = new EventEmitter<boolean>();
   peer;
   peerRoom;
-  constructor(private route: ActivatedRoute, private data: DataService, private router: Router, private ui: UiService) { }
+  roomSb: Subscription;
+  constructor(private route: ActivatedRoute, private data: DataService, private socket: Socket) { }
   ngOnInit() {
-    this.paramsSb = this.route.params.subscribe(params => {
-      this.params = params;
+    this.roomSb = this.data.roomState.subscribe(() => {//部屋移動時
+      this.stop.emit(true);
     });
   }
-  ngAfterViewInit() {
-    if (this.params.id === undefined || this.params.rtc === undefined) {
-      this.ui.alert("放送を表示できません。");
-    } else {
+  ngOnChanges() {
+    if (this.rtc) {
       this.rtcInit();
+    } else {
+      this.rtcClose()
     }
   }
   rtcInit() {
-    const rtc: string = this.params.rtc;
+    const rtc: string = this.rtc;
     let myVideoPeerId: string;
     let yourVideoPeerId: string;
     let audioPeerId: string;
@@ -39,15 +37,13 @@ export class VideoComponent implements OnInit {
     let myVideo: HTMLVideoElement;
     let yourVideo: HTMLVideoElement;
     let audio: HTMLAudioElement;
-    let mediaTag = document.getElementById("media");
+    let media = document.getElementById("media");//document.getElementById("header").insertAdjacentHTML('beforeend', '<div id="media"></div>');
     if (rtc !== "headset") {
-      let media = rtc === 'videocam' ?
-        { video: { width: { min: 240, max: 320 }, height: { min: 180, max: 240 } }, audio: true } :
-        { video: false, audio: true };
-      navigator.mediaDevices.getUserMedia(media).then(stream => {
+      let screen = rtc === 'videocam' ? { video: true, audio: true } : { video: false, audio: true };//{ video: { width: { min: 240, max: 320 }, height: { min: 180, max: 240 } }, audio: true } :
+      navigator.mediaDevices.getUserMedia(screen).then(stream => {
         localStream = stream;
         if (rtc === 'videocam') {
-          mediaTag.insertAdjacentHTML('beforeend', '<video id="myVideo"></video>');
+          media.insertAdjacentHTML('beforeend', '<video id="myVideo"></video>');
           myVideo = <HTMLVideoElement>document.getElementById('myVideo');
           myVideo.srcObject = stream;
           myVideo.onloadedmetadata = (e) => {
@@ -59,7 +55,7 @@ export class VideoComponent implements OnInit {
         }
       }
       ).catch(err => {
-        this.ui.alert("ビデオカメラが接続されていません。");
+        alert("ビデオカメラが接続されていません。");
       });
     }
     this.peer = new Peer(rtc + "_" + this.data.user.id, {
@@ -68,19 +64,20 @@ export class VideoComponent implements OnInit {
     });
     this.peer.on('open', () => {
       let peerMode = rtc === 'headset' ? { mode: 'sfu' } : { mode: 'sfu', stream: localStream };
-      this.peerRoom = this.peer.joinRoom(this.params.id, peerMode);
+      this.peerRoom = this.peer.joinRoom(this.data.room.id, peerMode);
+      this.socket.emit('rtc', rtc);
       this.peerRoom.on('stream', stream => {
         let pid = stream.peerId.split("_");
         if (pid[1] !== this.data.user.id) {
           if (pid[0] === "mic") {
-            mediaTag.insertAdjacentHTML('beforeend', '<audio id="audio"></audio>');
+            media.insertAdjacentHTML('beforeend', '<audio id="audio"></audio>');
             audio = <HTMLAudioElement>document.getElementById('audio');
             audio.srcObject = stream;
             audioPeerId = stream.peerId;
             audio.play();
           } else if (pid[0] === "videocam") {
             if (!myVideo) {
-              mediaTag.insertAdjacentHTML('beforeend', '<video id="myVideo"></video>');
+              media.insertAdjacentHTML('beforeend', '<video id="myVideo"></video>');
               myVideo = <HTMLVideoElement>document.getElementById('myVideo');
               myVideo.srcObject = stream;
               myVideoPeerId = stream.peerId;
@@ -92,7 +89,7 @@ export class VideoComponent implements OnInit {
               };
             } else {
               if (!yourVideo) {
-                mediaTag.insertAdjacentHTML('beforeend', '<video id="yourVideo"></video>');
+                media.insertAdjacentHTML('beforeend', '<video id="yourVideo"></video>');
                 yourVideo = <HTMLVideoElement>document.getElementById('yourVideo');
                 yourVideo.srcObject = stream;
                 yourVideoPeerId = stream.peerId;
@@ -140,16 +137,21 @@ export class VideoComponent implements OnInit {
     this.peer.on('close', () => {
     });
     this.peer.on('disconnected', () => {
-      //this.router.navigate(['/home/room', this.params.id]);
     });
   }
-  close() {
-    this.router.navigate(['/home/room', this.params.id]);
-  }
-  ngOnDestroy() {
-    if (this.paramsSb) this.paramsSb.unsubscribe();
+  rtcClose() {
     if (this.peerRoom) {
       this.peerRoom.close();
     }
+    let media = document.getElementById("media");
+    if (media) {
+      media.textContent = null;//remove();
+    }
+    this.socket.emit('rtc', "");
+  }
+  ngOnDestroy() {
+    this.rtcClose();
+    this.stop.emit(true);
+    this.roomSb.unsubscribe();
   }
 }

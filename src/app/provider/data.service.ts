@@ -18,15 +18,12 @@ export class DataService {
   rooms: Array<Room> = [];//部屋一覧に表示される部屋
   folder: Room = FOLDER;//部屋一覧の上部に表示される親部屋
   post: boolean;//fabボタンの状態
-  fabSubject = new Subject<string>();
   popMemberSubject = new Subject();//アバタークリック発火
   mentions;//受領したメンション一覧、key=room.id
   mentionSubject = new Subject();//メンション受領発火
   mentionRooms: Array<MentionRoom> = [];//未読メンション部屋一覧
   mentionRoomsSubject = new Subject<Array<MentionRoom>>();//未読メンションに変化発火
   directUser: User;//現在のダイレクトメッセージの相手
-  rtc: string = "";//WebRTC接続状態
-  rtcSubject = new Subject<string>();//WebRTC接続状態変化発火
   constructor(private php: PhpService, private socket: Socket) { }
   login(user) {
     if (this.user.id !== user.uid) {
@@ -73,7 +70,7 @@ export class DataService {
     }
     this.room = room;
     this.roomSubject.next(room);
-    this.rtc = "";
+    //this.rtc = "";
   }
   mentionRoom(mentions: Array<Mention>) {//メンション初回読み込み、変化時
     let mentionCounts = {}; this.mentions = {};
@@ -109,7 +106,6 @@ export class DataService {
     return y + "-" + m + "-" + d + " " + h + ":" + min + ":" + sec;
   }
 }
-
 export class User {
   id: string = "";
   na: string = "ビジター";

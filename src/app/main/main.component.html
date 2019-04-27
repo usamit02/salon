@@ -1,38 +1,70 @@
 <ion-header id="header">
-  <ion-toolbar>
+  <ion-toolbar *ngIf="head">
     <button style="display:none;" id="dummy"></button>
     <ion-buttons slot="start">
       <ion-menu-button menu="start"></ion-menu-button>
     </ion-buttons>
-    <ion-item>
-      <ion-title>{{data.room.na}}</ion-title>
-      <ion-button *ngIf="data.rtc" (click)="closeRtc()" color="light">
-        <ion-icon name="close"></ion-icon>切断
-      </ion-button>
-      <ion-button *ngIf="!data.rtc" (click)="rtc('headset')" color="primary">
-        <ion-icon name="headset"></ion-icon>視聴
-      </ion-button>
-      <ng-container *ngIf="data.user.id">
-        <ng-container *ngIf="!data.rtc">
-          <ion-button color="warning" (click)="rtc('mic')">
-            <ion-icon name="mic"></ion-icon>音声
-          </ion-button>
-          <ion-button color="danger" (click)="rtc('videocam')">
-            <ion-icon name="videocam"></ion-icon>動画
-          </ion-button>
-        </ng-container>
-        <ion-button (click)="logout()" color="dark">
-          <ion-icon name="log-out"></ion-icon>
-        </ion-button>
-      </ng-container>
-    </ion-item>
+    <ion-title>{{data.room.na}}</ion-title>
     <ion-buttons slot="end">
-      <ion-menu-button menu="end"></ion-menu-button>
+      <ion-menu-button menu="end">
+        <ion-icon name="contacts"></ion-icon>
+      </ion-menu-button>
     </ion-buttons>
   </ion-toolbar>
+  <app-video [rtc]="rtc" (stop)="rtc=''"></app-video>
 </ion-header>
 <ion-content>
+  <ion-fab vertical="top" horizontal="end" slot="fixed">
+    <ion-fab-button color="ligth">
+      <ion-icon name="menu"></ion-icon>
+    </ion-fab-button>
+    <ion-fab-list side="start">
+      <ion-fab-button (click)="head=!head" color="light">
+        <ion-icon name="arrow-dropdown"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button *ngIf="rtc" (click)="rtcClose()" color="danger">
+        <ion-icon name="close"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button *ngIf="!rtc" (click)="rtcOpen('headset')" color="primary">
+        <ion-icon name="headset"></ion-icon>
+      </ion-fab-button>
+      <ng-container *ngIf="data.user.id">
+        <ng-container *ngIf="!rtc">
+          <ion-fab-button (click)="rtcOpen('mic')" color="warning">
+            <ion-icon name="mic"></ion-icon>
+          </ion-fab-button>
+          <ion-fab-button (click)="rtcOpen('videocam')" color="danger">
+            <ion-icon name="videocam"></ion-icon>
+          </ion-fab-button>
+        </ng-container>
+        <ion-fab-button (click)="logout()" color="dark">
+          <ion-icon name="log-out"></ion-icon>
+        </ion-fab-button>
+      </ng-container>
+    </ion-fab-list>
+  </ion-fab>
   <router-outlet></router-outlet>
+  <ion-fab *ngIf="data.user.id" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="fab('post')" color="ligth">
+      <ion-icon name="create"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+  <ion-fab *ngIf="!data.user.id" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="ligth">
+      <ion-icon name="log-in"></ion-icon>
+    </ion-fab-button>
+    <ion-fab-list side="start">
+      <ion-fab-button (click)="fab('twitter')">
+        <ion-icon name="logo-twitter"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="fab('facebook')">
+        <ion-icon name="logo-facebook"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="fab('google')">
+        <ion-icon name="logo-google"></ion-icon>
+      </ion-fab-button>
+    </ion-fab-list>
+  </ion-fab>
 </ion-content>
 <ion-footer id="footer" *ngIf="data.post">
   <ion-toolbar>
@@ -72,10 +104,58 @@
   <canvas style='display:none;'></canvas>
 </ion-footer>
 <!--
-    <ion-item *ngIf="!data.user.id" button="true" (click)="login()">
+   
+  <ion-button *ngIf="data.rtc" (click)="closeRtc()" color="light">
+        <ion-icon name="close"></ion-icon>切断
+      </ion-button>
+      <ion-button *ngIf="!data.rtc" (click)="rtc('headset')" color="primary">
+        <ion-icon name="headset"></ion-icon>視聴
+      </ion-button>
+      <ng-container *ngIf="data.user.id">
+        <ng-container *ngIf="!data.rtc">
+          <ion-button color="warning" (click)="rtc('mic')">
+            <ion-icon name="mic"></ion-icon>音声
+          </ion-button>
+          <ion-button color="danger" (click)="rtc('videocam')">
+            <ion-icon name="videocam"></ion-icon>動画
+          </ion-button>
+        </ng-container>
+        <ion-button (click)="logout()" color="dark">
+          <ion-icon name="log-out"></ion-icon>
+        </ion-button>
+      </ng-container>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <ion-item *ngIf="!data.user.id" button="true" (click)="login()">
       ログインしてコミュニケーションを楽しもう
       <ion-icon class="twitter" name="logo-twitter"></ion-icon>
       <ion-icon class="facebook" name="logo-facebook"></ion-icon>
       <ion-icon class="google" name="logo-google"></ion-icon>
       <ion-icon class="yahoo" name="logo-yahoo"></ion-icon>
-    </ion-item>-->
+    </ion-item>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  -->

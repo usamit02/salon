@@ -56,7 +56,7 @@
             {{member.na}}
             <ion-icon *ngIf="member.auth>1" [class]="auth[member.auth].class" name="school"></ion-icon>
             <ion-icon *ngIf="member.auth===1" name="contacts" color="success"></ion-icon>
-            <ion-icon [name]="member.rtc" slot="end"></ion-icon>
+            <ion-icon [name]="member.rtc" slot="end" [class]="member.rtc"></ion-icon>
           </ion-item>
         </ion-list>
         <ng-container *ngIf="offMembers.length">
