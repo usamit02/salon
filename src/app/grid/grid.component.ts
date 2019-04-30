@@ -8,7 +8,7 @@ import { DataService } from '../provider/data.service';
   styleUrls: ['./grid.component.scss']
 })
 export class GridComponent implements OnInit, OnChanges {
-  constructor(private router: Router, private socket: Socket, private data: DataService, ) { }
+  constructor(private router: Router, private socket: Socket, public data: DataService, ) { }
   @Input() rooms;
   online = {};
   ngOnInit() {

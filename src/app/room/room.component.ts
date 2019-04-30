@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { IonContent, IonInfiniteScroll, ActionSheetController } from '@ionic/angular';
 import { ActivatedRoute } from '@angular/router';
 import { Room, DataService } from '../provider/data.service';
-import { AngularFirestore } from '@angular/fire/firestore';
+import { AngularFirestore, AngularFirestoreDocument } from '@angular/fire/firestore';
 import { AngularFireStorage } from '@angular/fire/storage';
 import { Subscription } from 'rxjs';
 import { PhpService } from '../provider/php.service';
@@ -18,10 +18,10 @@ declare var tinymce; declare var twttr;
 export class RoomComponent implements OnInit {
   @ViewChild('chatscontent') content: IonContent;
   @ViewChild('top') top: IonInfiniteScroll; @ViewChild('btm') btm: IonInfiniteScroll;
-  rid: number;
-  chats = [];
-  loading: boolean = false;
-  dbcon;
+  rid: number;//部屋番号
+  chats = [];//チャットデータ　表示は逆順になる
+  loading: boolean = false;//初回読み込み時の自動スクロールにion-infinate-scrollが反応するのを止める。
+  dbcon: AngularFirestoreDocument<{}>;//firestore接続バッファ　ダイレクト(direct)と部屋(room)で使い分け
   topMsg: string = ""; btmMsg: string = "";
   readed: boolean;
   newMsg: number = 0;
@@ -29,12 +29,12 @@ export class RoomComponent implements OnInit {
   loadUpd: Date;
   newUpds = [];
   mentionTop: number = 0; mentionBtm: number = 0;
-  currentY: number = 0;
-  cursor: Date = null;
-  twitter: boolean = false;
+  currentY: number = 0;//現在のスクロール位置
+  cursor: Date = null;//firestore読込の際の中央日付
+  twitter: boolean = false;//twitter.widgets.load()実行用
   mentionRoomsSb: Subscription; mentionDbSb: Subscription; newchatSb: Subscription; chatSb: Subscription;
-  paramsSb: Subscription; userSb: Subscription; allRoomsSb: Subscription;
-  constructor(private actionSheetCtrl: ActionSheetController, private route: ActivatedRoute, private data: DataService, private readonly db: AngularFirestore
+  paramsSb: Subscription; userSb: Subscription; allRoomsSb: Subscription;//各rxjs、メモリリーク対策destroy時破棄用
+  constructor(private actionSheetCtrl: ActionSheetController, private route: ActivatedRoute, public data: DataService, private readonly db: AngularFirestore
     , private php: PhpService, private storage: AngularFireStorage, private socket: Socket, private ui: UiService) { }
   ngOnInit() {
     this.paramsSb = this.route.params.subscribe(params => {
@@ -74,14 +74,15 @@ export class RoomComponent implements OnInit {
           break;
         }
       } while (id);
+      this.rid = newRoom.id;
       this.data.joinRoom(newRoom);
       if (newRoom.chat) this.chatInit();
     }
   }
   chatInit(direct?: number) {
     this.chats = []; this.currentY = 0; this.readed = false; this.twitter = false; this.newUpds = [];
-    this.top.disabled = true; this.btm.disabled = true;
-    this.dbcon = direct ? this.db.collection('direct').doc(direct.toString()) : this.db.collection('room').doc(this.data.room.id.toString());
+    this.top.disabled = true; this.btm.disabled = true;//無限スクロール無効
+    this.dbcon = direct ? this.db.collection('direct').doc(direct.toString()) : this.db.collection('room').doc(this.rid.toString());
     this.chatLoad(false, this.data.room.csd || this.cursor ? "btm" : "top", this.cursor);
     if (this.newchatSb) this.newchatSb.unsubscribe();
     this.newchatSb = this.dbcon.collection('chat', ref => ref.where('upd', '>', new Date())).valueChanges().
@@ -100,7 +101,7 @@ export class RoomComponent implements OnInit {
                     this.content.scrollToBottom(300);
                     this.btmMsg = "";
                     this.data.room.csd = data[0].upd.toDate();
-                    this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(this.data.room.csd) });
+                    this.php.get("room", { uid: this.data.user.id, rid: this.rid, csd: this.data.dateFormat(this.data.room.csd) });
                   } else {//画面上に最近のチャットが表示されていない
                     this.newUpds.push(data[data.length - 1].upd.toDate());
                   }
@@ -110,6 +111,7 @@ export class RoomComponent implements OnInit {
               }
             } else {//初回書き込み
               this.chats.unshift(data[data.length - 1]);
+              this.topMsg = "";
             }
             if (data[data.length - 1].twitter) {
               setTimeout(() => {
@@ -143,10 +145,10 @@ export class RoomComponent implements OnInit {
     } else {
       db = this.dbcon.collection('chat', ref => ref.where('upd', ">", cursor).orderBy('upd', 'asc').limit(20));
     }
-    let uid = this.data.user.id;//自動ログイン時重複読込対策
+    let uid: string = this.data.user.id;//自動ログイン時重複読込対策
     db.get().subscribe(query => {
       let docs1 = docsPush(query, this);
-      let limit = direction === 'btm' && !this.chats.length && docs1.length < 20 ? 20 - docs1.length : 0;
+      let limit: number = direction === 'btm' && !this.chats.length && docs1.length < 20 ? 20 - docs1.length : 0;
       if (!limit) { limit = 1; cursor = new Date("1/1/1900"); }
       db = this.dbcon.collection('chat', ref => ref.where('upd', "<=", cursor).orderBy('upd', 'desc').limit(limit));
       db.get().subscribe(query => {
@@ -158,51 +160,54 @@ export class RoomComponent implements OnInit {
           this.chats.push(...docs2);
           this.chats.unshift(...docs1.reverse());
         }
-        this.chatChange();
         let docs = docs1.concat(docs2);
-        if (docs.length && this.chats.length === docs.length) {
-          setTimeout(() => {
-            if (direction === "top" || !docs1.length) {
-              this.content.scrollToBottom(300).then(() => { scrollFin(this); }); //this.data.scroll("btm");
-              this.btmMsg = "";
-            } else {
-              if (docs2.length) {
-                let content = <any>document.getElementById('chatscontent');
-                let chats = content.children[2].children;//let chats = <any>document.getElementsByClassName('chat');
-                let cursorTop: number = 0; let cursorHeight: number = 0;
-                for (let i = 0; i < chats.length; i++) {
-                  if (new Date(chats[i].children[0].innerHTML).getTime() >= cursor.getTime()) {
-                    cursorTop = chats[i].offsetTop; cursorHeight = chats[i].offsetHeight; break;
-                  }
-                }
-                if (chats[chats.length - 1].offsetTop + chats[chats.length - 1].offsetHeight - cursorTop > content.scrollHeight) {
-                  this.content.scrollToTop(300).then(() => { scrollFin(this); });
-                } else {
-                  this.content.scrollToBottom(300).then(() => { scrollFin(this); });
-                  this.btmMsg = "";
-                }
-              } else {
-                scrollFin(this);
-                //this.topMsg = "既読メッセージを表示↑";
-                //this.content.scrollByPoint(0, 20, 300);//this.data.scroll("btmOne");
-              }
-            }
-            setTimeout(() => {
-              if (this.twitter) {
-                twttr.widgets.load();
-                this.twitter = false;
-              }
-            }, 1000);
-          }, 1000);
-        }
-        if (e) {
+        if (e) {//infinatescrollからの場合、スピナーを止める
           e.target.complete();
-          if (!docs.length) e.target.disabled = true;
+          if (!docs.length) e.target.disabled = true;//読み込むchatがなかったら以降infinatescroll無効
         }
-        if (!this.chats.length) this.topMsg = "一番乗りだ！";
+        if (this.chats.length) {
+          this.chatChange();
+          if (this.chats.length === docs.length) {
+            setTimeout(() => {
+              if (direction === "top" || !docs1.length) {
+                this.content.scrollToBottom(300).then(() => { scrollFin(this); }); //this.data.scroll("btm");
+                this.btmMsg = "";
+              } else {
+                if (docs2.length) {
+                  let content = <any>document.getElementById('chatscontent');
+                  let chats = content.children[2].children;
+                  let cursorTop: number = 0; let cursorHeight: number = 0;
+                  for (let i = 0; i < chats.length; i++) {
+                    if (new Date(chats[i].children[0].innerHTML).getTime() >= cursor.getTime()) {
+                      cursorTop = chats[i].offsetTop; cursorHeight = chats[i].offsetHeight; break;
+                    }
+                  }
+                  if (chats[chats.length - 1].offsetTop + chats[chats.length - 1].offsetHeight - cursorTop > content.scrollHeight) {
+                    this.content.scrollToTop(300).then(() => { scrollFin(this); });
+                  } else {
+                    this.content.scrollToBottom(300).then(() => { scrollFin(this); });
+                    this.btmMsg = "";
+                  }
+                } else {
+                  scrollFin(this);
+                  //this.topMsg = "既読メッセージを表示↑";
+                  //this.content.scrollByPoint(0, 20, 300);//this.data.scroll("btmOne");
+                }
+              }
+              setTimeout(() => {
+                if (this.twitter) {
+                  twttr.widgets.load();
+                  this.twitter = false;
+                }
+              }, 1000);
+            }, 1000);
+          }
+        } else {//読み込むchatがない
+          this.topMsg = "一番乗りだ！";
+        }
       });
     });
-    function docsPush(query, that) {
+    function docsPush(query, that) {//firestoreのget queryを配列へ、同時に既読位置とツイッターがあるか記録
       let docs = [];
       query.forEach(doc => {
         let d = doc.data();
@@ -215,16 +220,15 @@ export class RoomComponent implements OnInit {
       });
       return docs;
     }
-    function scrollFin(that) {
+    function scrollFin(that) {//無限スクロールを有効にする
       that.top.disabled = false; that.btm.disabled = false; that.loading = false;
     }
   }
-  chatChange() {
+  chatChange() {//読込んだchatの変更を監視
     if (this.chatSb) this.chatSb.unsubscribe();
     this.chatSb = this.dbcon.collection('chat', ref => ref.where('upd', '<=', this.chats[0].upd).
       where('upd', '>=', this.chats[this.chats.length - 1].upd)).valueChanges().subscribe(data => {//チャットロード以降の変更   
         let chats = data.reverse();
-        console.log("chats valueChanges");
         if (chats.length < this.chats.length) {
           //削除処理を追加予定
         } else if (chats.length === this.chats.length) {
@@ -254,7 +258,7 @@ export class RoomComponent implements OnInit {
         let upd = upds[upds.length - 1];//画面上見えてる最新の日付
         if (!this.data.room.csd || new Date(this.data.room.csd).getTime() < upd.getTime()) {
           this.data.room.csd = upd;
-          this.php.get("room", { uid: this.data.user.id, rid: this.data.room.id, csd: this.data.dateFormat(upd) });
+          this.php.get("room", { uid: this.data.user.id, rid: this.rid, csd: this.data.dateFormat(upd) });
         }
       }
     }
@@ -262,7 +266,7 @@ export class RoomComponent implements OnInit {
   deleteNotice(upds) {
     let upd0 = upds[0].getTime(); let upd9 = upds[upds.length - 1].getTime();
     this.newUpds = this.newUpds.filter(upd => upd.getTime() < upd0 || upd9 < upd.getTime());//新着メッセージ
-    let mentions = this.data.mentions[this.data.room.id.toString()];//メンション
+    let mentions = this.data.mentions[this.rid.toString()];//メンション
     if (mentions && mentions.length) {
       let deleteMentions = mentions.filter(mention => {
         let upd = mention.upd.toDate().getTime();
@@ -274,11 +278,11 @@ export class RoomComponent implements OnInit {
         mentions = mentions.filter(mention => { return mention.id !== deleteMentions[i].id; });
       }
       if (deleteMentions.length) {
-        this.data.mentions[this.data.room.id] = mentions;
-        let mentionRooms = this.data.mentionRooms.filter(mentionRoom => { return mentionRoom.id === this.data.room.id; });
+        this.data.mentions[this.rid] = mentions;
+        let mentionRooms = this.data.mentionRooms.filter(mentionRoom => { return mentionRoom.id === this.rid; });
         mentionRooms[0].count -= deleteMentions.length;
         if (!mentionRooms[0].count) {
-          this.data.mentionRooms = this.data.mentionRooms.filter(mentionRoom => { return mentionRoom.id !== this.data.room.id; });
+          this.data.mentionRooms = this.data.mentionRooms.filter(mentionRoom => { return mentionRoom.id !== this.rid; });
         }
         this.data.mentionRoomsSubject.next(this.data.mentionRooms);
       }
@@ -304,7 +308,7 @@ export class RoomComponent implements OnInit {
   }
   btmClick() {
     if (this.btmMsg = "新着メッセージを表示↓") {
-      this.db.collection('room').doc(this.data.room.id.toString()).collection('chat',
+      this.db.collection('room').doc(this.rid.toString()).collection('chat',
         ref => ref.orderBy('upd', 'desc').limit(1)).get().subscribe(query => {
           let doc = query[0].doc.data();
           let csd = doc.upd.toDate();
@@ -325,7 +329,7 @@ export class RoomComponent implements OnInit {
     if (type === "mentionTop") {
 
     } else if (type === "mentionBtm") {
-      let mentions = this.data.mentions[this.data.room.id.toString()];
+      let mentions = this.data.mentions[this.rid.toString()];
       let currentUpds = this.currentUpds({ currentTarget: <any>document.getElementById('chatscontent') });
       let loadedMentions = mentions.filter(mention =>
         mention.upd.toDate().getTime() <= upd.getTime() &&
@@ -434,13 +438,13 @@ export class RoomComponent implements OnInit {
   tip(na, idx) {
     let chat = this.chats[this.chats.length - idx - 1];
     let tip = JSON.stringify({ uid: chat.uid, na: chat.na, txt: chat.txt, upd: chat.upd.toDate() });
-    this.php.get("tip", { rid: this.data.room.id, room: this.data.room.na, uid: this.data.user.id, tiper: this.data.user.na, chat: tip }).then(res => {
+    this.php.get("tip", { rid: this.rid, room: this.data.room.na, uid: this.data.user.id, tiper: this.data.user.na, chat: tip }).then(res => {
       this.ui.pop(na + "による問題がある投稿を役員に通報しました。");
     });
   }
   copy(idx) {
     let upd = this.chats[this.chats.length - idx - 1].upd.toDate();
-    let url = "https;//" + location.host + "/home/room/" + this.data.room.id + "/" + Math.floor(upd.getTime() / 1000);
+    let url = "https;//" + location.host + "/home/room/" + this.rid + "/" + Math.floor(upd.getTime() / 1000);
     if (execCopy(url)) {
       this.ui.pop("クリップボードに投稿urlをコピーしました。");
     } else {
@@ -509,8 +513,8 @@ export class RoomComponent implements OnInit {
       if (query.docs.length) {
         let doc = query.docs[0].data();
         if (doc.img) {
-          this.storage.ref("room/" + this.data.room.id + "/" + doc.img).delete();
-          this.storage.ref("room/" + this.data.room.id + "/org/" + doc.img).delete();
+          this.storage.ref("room/" + this.rid + "/" + doc.img).delete();
+          this.storage.ref("room/" + this.rid + "/org/" + doc.img).delete();
         }
         this.dbcon.collection('chat').doc(query.docs[0].id).delete();
         this.chats = this.chats.filter(chat => chat.upd.toDate().getTime() !== upd.toDate().getTime());
@@ -520,7 +524,7 @@ export class RoomComponent implements OnInit {
     });
   }
   popMember(e, uid) {
-    this.php.get("member", { rid: this.data.room.id, uid: uid }).then(res => {
+    this.php.get("member", { rid: this.rid, uid: uid }).then(res => {
       let member = { id: uid, na: '', avatar: '', auth: 0, payroomid: 0, authroomid: 0 };
       if (res.members.length) member = res.members[0];
       this.data.popMemberSubject.next({

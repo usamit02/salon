@@ -19,18 +19,18 @@
       <ion-button (click)="edit()">新しい参照リンク</ion-button>
     </ion-item>
   </ion-item-group>
-  <ion-label color="light" *ngIf="!user.staff.length">スタッフに就任していません</ion-label>
-  <ion-item-group *ngIf="user.staff.length">
+  <ion-label color="light" *ngIf="!user.staffs.length">スタッフに就任していません</ion-label>
+  <ion-item-group *ngIf="user.staffs.length">
     <p>スタッフ</p>
-    <ion-item *ngFor="let staff of user.staff">
+    <ion-item *ngFor="let staff of user.staffs">
       <ion-item button="true" (click)="joinRoom(staff.rid)">{{staff.room}}</ion-item>
       <ion-label slot="end"> {{staff.class}}に{{staff.upd|chatdate:'detail'}}から就任</ion-label>
     </ion-item>
   </ion-item-group>
-  <ion-label color="ligth" *ngIf="!user.member.length">メンバーとして参加していません</ion-label>
-  <ion-item-group *ngIf="user.member.length">
+  <ion-label color="ligth" *ngIf="!user.members.length">メンバーとして参加していません</ion-label>
+  <ion-item-group *ngIf="user.members.length">
     <p>メンバー</p>
-    <ng-container *ngFor="let member of user.member">
+    <ng-container *ngFor="let member of user.members">
       <ion-item *ngIf="member.auth || data.room.auth>=200 || user.id===data.user.id" (press)="joinRoom(member.rid)">
         <ion-item button="true" (click)="joinRoom(member.rid)">{{member.room}}</ion-item>
         <ion-button *ngIf="!member.auth && data.room.auth>=200" color="success" (click)="judge(member)" slot="end">審査</ion-button>

@@ -19,13 +19,11 @@ export class MemberComponent implements OnInit {
   block: Number;
   online = { id: 0, na: "" };
   auth = AUTH;
-  constructor(private navParams: NavParams, private pop: PopoverController, private data: DataService,
+  constructor(private navParams: NavParams, private pop: PopoverController, public data: DataService,
     private php: PhpService, private ui: UiService, private db: AngularFirestore, private router: Router,
     private socket: Socket, private alertController: AlertController) { }
   ngOnInit() {
     this.member = this.navParams.get('member');
-    let room = this.data.room;
-    let member = this.member;
     if (this.data.user.id) {
       this.php.get("member", { uid: this.data.user.id, mid: this.member.id }).then(res => {
         this.block = res.block;

@@ -7,15 +7,15 @@ export const environment = {
 };
 import { SocketIoConfig } from 'ngx-socket-io';
 export const firebaseConfig = {
-  apiKey: 'AIzaSyAvD0ftnENGOCvE9cOPB8AklV7JeMY4cfg',
-  authDomain: 'blogersguild1.firebaseapp.com',
-  databaseURL: 'https://blogersguild1.firebaseio.com',
-  projectId: 'blogersguild1',
-  storageBucket: 'blogersguild1.appspot.com',
+  apiKey: 'AIzaSyB8s5OQAXCjki499Q-YpN5ip2LCejRX80o',
+  authDomain: 'salon-clife.firebaseapp.com',
+  databaseURL: 'https://salon-clife.firebaseio.com',
+  projectId: 'salon-clife',
+  storageBucket: 'salon-clife.appspot.com',
   messagingSenderId: '1091781872346'
 };
-export const socketConfig: SocketIoConfig = { url: 'http://localhost:3003', options: {} };
-//export const socketConfig: SocketIoConfig = { url: 'https://www.clife.cf:3003', options: {} };
+//export const socketConfig: SocketIoConfig = { url: 'http://localhost:3003', options: {} };
+export const socketConfig: SocketIoConfig = { url: 'https://www.clife.cf:3003', options: {} };
 //export const socketConfig: SocketIoConfig = { url: 'http://35.193.127.88:3003', options: {} };
 export const FOLDER = { id: 1, na: "ブロガーズギルド", parent: 1, folder: true };
 export const AUTH = {
@@ -28,7 +28,7 @@ export const AUTH = {
   '9000': { id: 9000, na: "オーナー", class: 'owner' }
 };
 export const PHPURL = "http://localhost/public_html/";
-//export const PHPURL ="https://bloggersguild.cf/";
+//export const PHPURL = "https://bloggersguild.cf/";
 export const tinyinit = {
   selector: ".tiny",
   menubar: false,
@@ -51,7 +51,25 @@ export const tinyinit = {
 
 
 
+/*
 
+export const firebaseConfig = {
+  apiKey: 'AIzaSyAvD0ftnENGOCvE9cOPB8AklV7JeMY4cfg',
+  authDomain: 'blogersguild1.firebaseapp.com',
+  databaseURL: 'https://blogersguild1.firebaseio.com',
+  projectId: 'blogersguild1',
+  storageBucket: 'blogersguild1.appspot.com',
+  messagingSenderId: '1091781872346'
+};
+
+
+
+
+
+
+
+
+ */
 
 
 

@@ -21,6 +21,9 @@ export class PhpService {
           this.ui.alert(res.msg);
           reject();
         }
+      }, (error) => {
+        this.ui.alert("通信エラー  \r\n" + error.message);
+        reject();
       });
     });
   }
@@ -44,3 +47,23 @@ export class PhpService {
     //return this.http.post(this.url + url, fd, { reportProgress: true,observe:'events' });
   }
 }
+
+/*
+ get(url: string, params: any, msg?: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (msg) this.ui.loading(msg + "...");
+      let php = this.http.get(PHPURL + url + ".php", { params: params }).subscribe((res: any) => {
+        if (msg) this.ui.loadend();
+        php.unsubscribe();
+        if (res.msg === "ok") {
+          resolve(res);
+        } else {
+          this.ui.alert(res.msg);
+          reject();
+        }
+      });
+    });
+  }
+
+
+*/

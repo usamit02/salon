@@ -17,7 +17,7 @@ export class StoryComponent implements OnInit {
   months = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
   card = { last4: "", bland: "", exp_year: null, exp_month: null, change: false };
   newcard = { number: "4242424242424242", cvc: "123", exp_year: "2020", exp_month: "12" };
-  plan = { amount: null, billing_day: null, trial_days: null, auth_days: null };
+  plan = { amount: null, billing_day: null, trial_days: null, auth_days: null, prorate: null };
   price;
   billing_day;
   trial_days;
@@ -38,8 +38,7 @@ export class StoryComponent implements OnInit {
   }
   goPayMode(payid) {//「このサロンに加入する」ボタンを押したとき、プランとカード情報を呼んで最終確認ページへ
     if (this.data.user.id) {
-      let room = this.room;
-      this.payid = payid;
+      this.payid = payid;//-1は定額課金、0>はストーリー番号
       Payjp.setPublicKey("pk_test_12e1f56f9f92414d7b00af63");
       let plan: any = { uid: this.data.user.id, rid: this.room.id };
       if (payid === -1) plan.pid = this.room.plan;

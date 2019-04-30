@@ -17,7 +17,7 @@ export class DataService {
   roomState = this.roomSubject.asObservable();//部屋移動発火
   rooms: Array<Room> = [];//部屋一覧に表示される部屋
   folder: Room = FOLDER;//部屋一覧の上部に表示される親部屋
-  post: boolean;//fabボタンの状態
+  post: boolean;//投稿窓の開閉
   popMemberSubject = new Subject();//アバタークリック発火
   mentions;//受領したメンション一覧、key=room.id
   mentionSubject = new Subject();//メンション受領発火
@@ -64,13 +64,15 @@ export class DataService {
   joinRoom(room: Room) {//部屋移動
     let user = { id: this.user.id, na: this.user.na, avatar: this.user.avatar, no: this.user.no, auth: room.auth };
     this.socket.emit('join', { newRoomId: room.id, oldRoomId: this.room.id, user: user });
-    if (room.folder) {
-      this.rooms = this.allRooms.filter(r => { return r.parent === room.id; });
-      this.folder = room;
-    }
-    this.room = room;
-    this.roomSubject.next(room);
-    //this.rtc = "";
+    setTimeout(() => {//Expression has changed after it was checked.エラー回避のため非同期化
+      if (room.folder) {
+        this.rooms = this.allRooms.filter(r => { return r.parent === room.id; });
+        this.folder = room;
+      }
+      this.room = room;
+      this.roomSubject.next(room);
+      //this.rtc = "";
+    });
   }
   mentionRoom(mentions: Array<Mention>) {//メンション初回読み込み、変化時
     let mentionCounts = {}; this.mentions = {};

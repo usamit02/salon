@@ -27,8 +27,10 @@
   </div>
 </ng-container>
 <ng-container *ngIf="payid">
+  <ng-container *ngIf="payid>0">
+    <h2>{{story.pay}}円を一括払いします。</h2>
+  </ng-container>
   <ng-container *ngIf="payid===-1">
-    <h2>加入にあたって</h2>
     <h2>注意事項</h2>
     以下に該当した場合、強制退会となります。
     <ol>
@@ -49,7 +51,7 @@
       </ng-container>
     </h3>
     <p *ngIf="plan.prorate && plan.billing_day">※初月分は加入日から引き落とし日までの日数により日割り計算で加入日に自動引き落としされます。</p>
-    <p *ngIf="!plan.prorate && plan.billing_day && (plan.auth_days || plan.trial_days)">※初月分は加入日から次回引き落とし日までの日数が一月に満たない場合でも月額分が加入日に自動引き落としされます。</p>    
+    <p *ngIf="!plan.prorate && plan.billing_day && (plan.auth_days || plan.trial_days)">※初月分は加入日から次回引き落とし日までの日数が一月に満たない場合でも月額分が加入日に自動引き落としされます。</p>
     <h3 *ngIf="plan.trial_days">無料お試し期間:{{plan.trial_days}}日間</h3>
   </ng-container>
   <div *ngIf="card.last4">

@@ -4,7 +4,7 @@ import { auth } from 'firebase/app';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireStorage } from '@angular/fire/storage';
-import { DataService } from '../provider/data.service';
+import { DataService, Room } from '../provider/data.service';
 import { PhpService } from '../provider/php.service';
 import { Observable, Subscription } from 'rxjs';
 import { UiService } from '../provider/ui.service';
@@ -24,11 +24,12 @@ export class MainComponent {
   uploadPercent: Observable<number>;
   sendable: boolean = false;
   typing: boolean = true;
-  head: boolean = false;
+  head: boolean = true;
+  chat: boolean = false;
   rtc: string;
   mentionSb: Subscription; fabSb: Subscription;
   constructor(
-    private data: DataService, private afAuth: AngularFireAuth, private db: AngularFirestore,
+    public data: DataService, private afAuth: AngularFireAuth, private db: AngularFirestore,
     private php: PhpService, private storage: AngularFireStorage,
     private ui: UiService, private socket: Socket,
   ) { }
@@ -41,6 +42,12 @@ export class MainComponent {
       ed.focus();
       var newNode = ed.dom.select('#' + endId);
       ed.selection.select(newNode[0]);
+    });
+    this.data.roomState.subscribe((room: Room) => {//部屋移動時投稿窓閉じる
+      if (!room.chat && this.data.post) {
+        tinymce.activeEditor.setContent('');
+        this.data.post = false;
+      }
     });
     this.socket.removeListener('typing');
     this.socket.on("typing", writer => {
@@ -69,7 +76,6 @@ export class MainComponent {
   }
   send() {
     this.sendable = false;
-    this.data.post = false;
     var upd = new Date();
     if (this.media.img && this.media.img.type.match(/image.*/)) {
       this.ui.pop("アップロードしています・・・");
@@ -241,8 +247,7 @@ export class MainComponent {
   }
   fab(button) {
     if (button === "post") {
-      this.data.post = !this.data.post;
-      if (this.data.post) {
+      if (!this.data.post) {
         setTimeout(() => {
           tinymce.init({
             selector: ".tiny",
@@ -278,6 +283,7 @@ export class MainComponent {
       } else {
         tinymce.activeEditor.setContent('');
       }
+      this.data.post = !this.data.post;
     } else {
       let provider: auth.AuthProvider;
       if (button === "twitter") {
@@ -286,6 +292,8 @@ export class MainComponent {
         provider = new firebase.auth.FacebookAuthProvider();
       } else if (button === "google") {
         provider = new firebase.auth.GoogleAuthProvider();
+      } else if (button === "yahoo") {
+        provider = new auth.OAuthProvider("yahoo.co.jp");
       }
       this.afAuth.auth.signInWithPopup(provider).catch(reason => {
         this.ui.pop(button + "のログインに失敗しました。");

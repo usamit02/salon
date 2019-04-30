@@ -21,7 +21,7 @@ export class MediaPipe implements PipeTransform {
           html += '<span class="react">' + value[id].emoji + '<span style="display:none;">' + value[id].na + '</span></span>';
         });
         return html;
-      case 'card': return '<div style="border-style:groove;"><div><a href="' + value.url + '" target="_blank"><img style="max-height:200px;"src="'
+      case 'card': return '<div style="border-style:groove; border-radius: 10px;"><div><a href="' + value.url + '" target="_blank"><img style="max-height:200px;"src="'
         + value.image + '"></a></div><div><a href="' + value.url + '" target="_blank">' + value.title + '</a><p>' + value.description + '</p></div></div>';
       default: throw new Error(`Invalid safe type specified: ${type}`);
     }

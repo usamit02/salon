@@ -1,5 +1,4 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
 import { DataService } from '../provider/data.service';
 import { Socket } from 'ngx-socket-io';
 import { Subscription } from 'rxjs';
@@ -15,7 +14,7 @@ export class VideoComponent implements OnInit {
   peer;
   peerRoom;
   roomSb: Subscription;
-  constructor(private route: ActivatedRoute, private data: DataService, private socket: Socket) { }
+  constructor(private data: DataService, private socket: Socket) { }
   ngOnInit() {
     this.roomSb = this.data.roomState.subscribe(() => {//部屋移動時
       this.stop.emit(true);
@@ -39,7 +38,7 @@ export class VideoComponent implements OnInit {
     let audio: HTMLAudioElement;
     let media = document.getElementById("media");//document.getElementById("header").insertAdjacentHTML('beforeend', '<div id="media"></div>');
     if (rtc !== "headset") {
-      let screen = rtc === 'videocam' ? { video: true, audio: true } : { video: false, audio: true };//{ video: { width: { min: 240, max: 320 }, height: { min: 180, max: 240 } }, audio: true } :
+      let screen = rtc === 'videocam' ? { video: { width: { min: 240, max: 320 }, height: { min: 180, max: 240 } }, audio: true } : { video: false, audio: true };//{ video: { width: { min: 240, max: 320 }, height: { min: 180, max: 240 } }, audio: true } :
       navigator.mediaDevices.getUserMedia(screen).then(stream => {
         localStream = stream;
         if (rtc === 'videocam') {

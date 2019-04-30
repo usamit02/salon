@@ -4,7 +4,7 @@ import { PhpService } from '../provider/php.service';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { Location } from '@angular/common';
-import { DataService } from '../provider/data.service';
+import { DataService, User } from '../provider/data.service';
 import { AlertController } from '@ionic/angular';
 import { UiService } from '../provider/ui.service';
 @Component({
@@ -14,20 +14,15 @@ import { UiService } from '../provider/ui.service';
 })
 export class DetailComponent implements OnInit {
   paramsSb: Subscription;
-  user;
+  user: Member = new Member;
   constructor(private php: PhpService, private router: Router, private route: ActivatedRoute,
-    private location: Location, private data: DataService, private alertController: AlertController,
+    private location: Location, public data: DataService, private alertController: AlertController,
     private ui: UiService) { }
   ngOnInit() {
     this.paramsSb = this.route.params.subscribe(params => {
       if (params.no > 0) {
-        this.php.get('user', { no: params.no }, "読込中").then(res => {
-          if (res.user) {
-            this.user = res.user;
-            this.user.staff = res.staff;
-            this.user.member = res.member;
-            this.user.links = res.links;
-          }
+        this.php.get('user', { no: params.no }, "読込中").then((res: Member) => {
+          this.user = res;
         });
       }
     });
@@ -119,7 +114,7 @@ export class DetailComponent implements OnInit {
           text: 'NG', handler: () => {
             this.php.get("pay/roompay", { uid: this.user.id, rid: member.rid, ban: this.data.user.id }).then(res => {
               this.ui.pop(this.user.na + "は" + member.room + "に入れない、残念でした。");
-              this.user.member = this.user.member.filter(m => { return m.rid !== member.rid; });
+              this.user.members = this.user.members.filter(m => { return m.rid !== member.rid; });
             });
           }
         },
@@ -131,3 +126,17 @@ export class DetailComponent implements OnInit {
     this.location.back();
   }
 }
+class Member extends User {
+  staffs: any[];
+  members: any[];
+  links: any[];
+  msg: string;
+}
+/*
+ if (res.user) {
+            this.user = res.user;
+            this.user.staffs = res.staffs;
+            this.user.members = res.members;
+            this.user.links = res.links;
+          }
+*/

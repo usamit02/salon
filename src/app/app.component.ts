@@ -23,7 +23,7 @@ export class AppComponent {
   auth = AUTH;
   mentionDbSb: Subscription;
   constructor(
-    private data: DataService, private php: PhpService, private router: Router,
+    public data: DataService, private php: PhpService, private router: Router,
     private pop: PopoverController, private db: AngularFirestore, private ui: UiService, private socket: Socket,
   ) {
   }
@@ -31,7 +31,7 @@ export class AppComponent {
     this.data.readRooms();//部屋一覧読込
     this.data.roomState.subscribe((room: Room) => {//部屋移動時
       this.newChat();//未読表示
-      this.php.get('member', { rid: room.id }).then(res => {
+      this.php.get('member', { rid: room.id }).then(res => {//ユーザー一覧読込
         this.offMembers = [];
         for (let i = 0; i < res.members.length; i++) {
           var f = true;

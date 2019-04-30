@@ -7,8 +7,13 @@
   z-index: 1;
   opacity: 0.5;
 }
-#topmsg{
+#mentionTop{
   top:0px;
+}
+#topmsg{
+  color:gray;
+  width:100%;
+  text-align: center;
 }
 #btmmsg{
   bottom:0px;
