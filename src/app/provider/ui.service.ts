@@ -32,9 +32,6 @@ export class UiService {
       closeButtonText: '閉じる'
     });
     toast.present();
-    toast.onDidDismiss().then(data => {
-      console.log(data);
-    });
   }
   async loading(msg?: string) {
     msg = msg ? msg : "処理中...";

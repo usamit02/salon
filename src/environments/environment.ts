@@ -27,8 +27,8 @@ export const AUTH = {
   '1000': { id: 1000, na: "マスター", class: 'master' },
   '9000': { id: 9000, na: "オーナー", class: 'owner' }
 };
-export const PHPURL = "http://localhost/public_html/";
-//export const PHPURL = "https://bloggersguild.cf/";
+//export const PHPURL = "http://localhost/public_html/";
+export const PHPURL = "https://bloggersguild.cf/";
 export const tinyinit = {
   selector: ".tiny",
   menubar: false,

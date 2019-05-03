@@ -2,6 +2,7 @@ import { Component, OnInit, Input } from '@angular/core';
 import { PhpService } from '../provider/php.service';
 import { UiService } from '../provider/ui.service';
 import { DataService } from '../provider/data.service';
+import { PHPURL } from '../../environments/environment';
 declare var twttr; declare var Payjp;
 @Component({
   selector: 'app-story',
@@ -22,6 +23,7 @@ export class StoryComponent implements OnInit {
   billing_day;
   trial_days;
   auth_days;
+  visamaster = PHPURL + "img/visamaster.jpg";
   @Input() room;
   @Input() user;
   constructor(private php: PhpService, private ui: UiService, private data: DataService) { }
@@ -39,7 +41,7 @@ export class StoryComponent implements OnInit {
   goPayMode(payid) {//「このサロンに加入する」ボタンを押したとき、プランとカード情報を呼んで最終確認ページへ
     if (this.data.user.id) {
       this.payid = payid;//-1は定額課金、0>はストーリー番号
-      Payjp.setPublicKey("pk_test_12e1f56f9f92414d7b00af63");
+      Payjp.setPublicKey("pk_live_087f0146e09e1f1eceaf0750");
       let plan: any = { uid: this.data.user.id, rid: this.room.id };
       if (payid === -1) plan.pid = this.room.plan;
       this.php.get("pay/plan", plan, "読込中").then(res => {
@@ -64,7 +66,7 @@ export class StoryComponent implements OnInit {
   }
   pay(token: string) {
     let charge: any = { rid: this.room.id, uid: this.user.id, na: this.user.na, token: token };
-    if (this.payid > 0) charge.sid = this.payid;
+    if (this.payid >= 0) charge.sid = this.storys[this.payid].id;
     this.php.get("pay/charge", charge, "支払中").then(res => {
       if (res.typ === "plan") {//定額課金        
         this.data.readRooms();

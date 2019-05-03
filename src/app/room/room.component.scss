@@ -35,6 +35,10 @@
 .avatar{
   min-width: 40px;
 }
+.avatarItem{
+  --padding-start:0px;
+  --inner-padding-end:5px;
+}
 .none{
   display:none;
 }

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import * as firebase from 'firebase';
-import { auth } from 'firebase/app';
+//import { auth } from 'firebase/app';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireStorage } from '@angular/fire/storage';
@@ -58,7 +58,7 @@ export class MainComponent {
     });
   }
   ngAfterViewInit() {
-    firebase.auth().onAuthStateChanged(user => {
+    this.afAuth.authState.subscribe(user => {//firebase.auth().onAuthStateChanged(user => {
       if (user) {
         this.data.post = false;
         this.data.login(user);
@@ -256,14 +256,14 @@ export class MainComponent {
             //theme: 'inlite',
             mobile: {
               theme: 'mobile',
-              plugins: ['autosave', 'lists', 'autolink'],
-              toolbar: ['undo', 'bold', 'italic', 'styleselect', 'emoticons']
+              plugins: ['autosave', 'emoticons', 'lists', 'autolink'],
+              toolbar: ['undo', 'emoticons', 'bold', 'italic', 'styleselect']
             },
             language_url: 'https://bloggersguild.cf/js/ja.js',
             plugins: [
               'autolink autosave codesample link lists advlist table paste emoticons'
             ],
-            toolbar: 'undo redo | forecolor | emoticons styleselect | blockquote link copy paste',
+            toolbar: 'undo redo | emoticons | forecolor styleselect | blockquote link copy paste',
             contextmenu: 'restoredraft | inserttable cell row column deletetable | bullist numlist',
             forced_root_block: false, allow_conditional_comments: true, allow_html_in_named_anchor: true, allow_unsafe_link_target: true,
             setup: editor => {
@@ -285,7 +285,7 @@ export class MainComponent {
       }
       this.data.post = !this.data.post;
     } else {
-      let provider: auth.AuthProvider;
+      let provider: firebase.auth.AuthProvider;
       if (button === "twitter") {
         provider = new firebase.auth.TwitterAuthProvider();
       } else if (button === "facebook") {
@@ -293,7 +293,7 @@ export class MainComponent {
       } else if (button === "google") {
         provider = new firebase.auth.GoogleAuthProvider();
       } else if (button === "yahoo") {
-        provider = new auth.OAuthProvider("yahoo.co.jp");
+        // provider = new auth.OAuthProvider("yahoo.co.jp");
       }
       this.afAuth.auth.signInWithPopup(provider).catch(reason => {
         this.ui.pop(button + "のログインに失敗しました。");
@@ -322,7 +322,8 @@ class Media {
   }
 }
 /*
- sendMsg2() {
+
+send2() {
     var upd = new Date();
     for (let i = 0; i < 100; i++) {
       upd.setDate(upd.getDate() - 1);
@@ -331,7 +332,6 @@ class Media {
       });
     }
   }
-
 
 this.storage.upload(path, file).then(snapshot => {
       this.storage.ref(path).getDownloadURL().subscribe(url => {

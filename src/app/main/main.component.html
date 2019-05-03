@@ -55,13 +55,13 @@
       <ion-icon name="log-in"></ion-icon>
     </ion-fab-button>
     <ion-fab-list side="start">
-      <ion-fab-button (click)="fab('twitter')">
+      <ion-fab-button color="twitter" (click)="fab('twitter')">
         <ion-icon name="logo-twitter"></ion-icon>
       </ion-fab-button>
-      <ion-fab-button (click)="fab('google')">
+      <ion-fab-button color="google" (click)="fab('google')">
         <ion-icon name="logo-google"></ion-icon>
       </ion-fab-button>
-      <ion-fab-button (click)="fab('facebook')">
+      <ion-fab-button color="facebook" (click)="fab('facebook')">
         <ion-icon name="logo-facebook"></ion-icon>
       </ion-fab-button>
     </ion-fab-list>
@@ -84,10 +84,10 @@
           </ion-button>
           <input *ngIf="mediaButton.img" id="upimg" type="file" accept="image/*" capture="camera" (change)="fileup($event)" />
           <ion-button clear icon-only (click)="mediaButton.url=!mediaButton.url" (press)="twitterPress()">
-            <ion-icon color="secondary" name="logo-twitter"></ion-icon>
+            <ion-icon color="twitter" name="logo-twitter"></ion-icon>
           </ion-button>
           <ion-button clear icon-only (click)="mediaButton.url=!mediaButton.url" (press)="youtubePress()">
-            <ion-icon color="danger" name="logo-youtube"></ion-icon>
+            <ion-icon color="google" name="logo-youtube"></ion-icon>
           </ion-button>
           <ng-container *ngIf="mediaButton.url">
             <input id="url" type="text" placeholder="youtubeやtwitterなどのurl" (change)="urlClick($event)">
