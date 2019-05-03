@@ -34,7 +34,7 @@ export class RoomComponent implements OnInit {
   H: number = 0;//現在のスクロール高さ
   cursor: Date = null;//firestore読込の際の中央日付
   twitter: boolean = false;//twitter.widgets.load()実行用
-  mentionRoomsSb: Subscription; mentionDbSb: Subscription; newchatSb: Subscription; chat1Sb: Subscription; chat2Sb: Subscription;
+  mentionRoomsSb: Subscription; mentionDbSb: Subscription; newchatSb: Subscription; chatSb: Subscription;
   paramsSb: Subscription; userSb: Subscription; allRoomsSb: Subscription;//各rxjs、メモリリーク対策destroy時破棄用
   constructor(private actionSheetCtrl: ActionSheetController, private route: ActivatedRoute, public data: DataService, private readonly db: AngularFirestore
     , private php: PhpService, private storage: AngularFireStorage, private socket: Socket, private ui: UiService) { }
@@ -92,43 +92,32 @@ export class RoomComponent implements OnInit {
     this.dbcon = direct ? this.db.collection('direct').doc(direct.toString()) : this.db.collection('room').doc(this.rid.toString());
     this.chatLoad(false, this.data.room.csd || this.cursor ? "btm" : "top", this.cursor);
     if (this.newchatSb) this.newchatSb.unsubscribe();
-    this.newchatSb = this.dbcon.collection('chat', ref => ref.where('upd', '>', this.loadUpd)).valueChanges().
-      subscribe(data => {//チャットロード以降の書き込み   
-        if (!data.length) return;
-        this.dbcon.collection('chat', ref => ref.where('upd', "<", data[data.length - 1].upd).orderBy('upd', 'desc').
+    this.newchatSb = this.dbcon.collection('chat', ref => ref.where('upd', '>', this.loadUpd)).stateChanges(['added']).
+      subscribe(action => {//チャットロード以降の書き込み 
+        let chat = action[0].payload.doc.data();
+        this.dbcon.collection('chat', ref => ref.where('upd', "<", chat.upd).orderBy('upd', 'desc').
           limit(1)).get().subscribe(query => {//書き込み直前のチャットを取得
             if (query.docs.length) {//初回書き込みでない
               if (query.docs[0].data().upd.toDate().getTime() === this.chats[0].upd.toDate().getTime()) {//読込済最新チャットの次の投稿
-                this.chats.unshift(data[data.length - 1]);//チャットが連続していれば書き込みを足す（chats[0]が最新、reverse）
+                this.chats.unshift(chat);//チャットが連続していれば書き込みを足す（chats[0]が最新、reverse）
+                this.chatChange();
                 setTimeout(() => {
-                  let chat = <any>document.getElementById('chat' + (this.chats.length - 1).toString());//新規チャット
-                  if (this.Y + this.H > chat.offsetTop) {
+                  let chatElement = <any>document.getElementById('chat' + (this.chats.length - 1).toString());//新規チャット
+                  if (this.Y + this.H > chatElement.offsetTop) {
                     this.content.scrollToBottom(300);
                     this.btmMsg = "";
                   } else {//画面上に最近のチャットが表示されていない
-                    this.newUpds.push(data[data.length - 1].upd.toDate());//新着メッセージを追加
+                    this.newUpds.push(chat.upd.toDate());//新着メッセージを追加
                   }
                 }, 1000);
-              } else {//読込済最新チャットの次のチャットはない
-                if (data[0].upd.toDate().getTime() <= this.chats[0].upd.toDate().getTime()) {//読込済チャットの変更、削除
-                  data = data.reverse();//data[0]を最新にする
-                  for (let i = 0; i < data.length; i++) {//課題:変更はいいが削除に対応してない
-                    if (data[i].upd.toDate().getTime() === this.chats[0].upd.toDate().getTime()) {
-                      for (let j = 0; j < data.length - i; j++) {
-                        this.chats[j] = data[j - i];
-                      }
-                      break;
-                    }
-                  }
-                } else {//直近のチャットをchatLoadで読み込んでいない
-                  this.newUpds.push(data[data.length - 1].upd.toDate());//新着メッセージを追加
-                }
+              } else {//読込済最新チャットの次のチャットはない                
+                this.newUpds.push(chat.upd.toDate());//新着メッセージを追加                
               }
             } else {//初回書き込み
-              this.chats.unshift(data[data.length - 1]);
+              this.chats.unshift(chat);
               this.topMsg = "";
             }
-            if (data[data.length - 1].twitter) {
+            if (chat.twitter) {
               setTimeout(() => {
                 twttr.widgets.load();
               }, 3000);
@@ -162,18 +151,14 @@ export class RoomComponent implements OnInit {
       db = this.dbcon.collection('chat', ref => ref.where('upd', ">", cursor).where('upd', '<', this.loadUpd).orderBy('upd', 'asc').limit(20));
     }
     let uid: string = this.data.user.id;//自動ログイン時重複読込対策
-    //if (this.chat1Sb) this.chat1Sb.unsubscribe();
-    db.snapshotChanges().subscribe((res: Array<any>) => {
-      let docs1 = docsPush(res, this);
-      if (docs1.length && docs1[0] === 0) return;
+    db.get().subscribe(query => {
+      let docs1 = docsPush(query, this);
       let limit: number = direction === 'btm' && !this.chats.length && docs1.length < 20 ? 20 - docs1.length : 0;
       if (!limit) { limit = 1; cursor = new Date("1/1/1900"); }
       db = this.dbcon.collection('chat', ref => ref.where('upd', "<=", cursor).orderBy('upd', 'desc').limit(limit));
-      //if (this.chat2Sb) this.chat2Sb.unsubscribe();
-      db.snapshotChanges().subscribe((res: Array<any>) => {
+      db.get().subscribe(query => {
         if (uid !== this.data.user.id) return;//自動ログイン時重複読込対策 
-        let docs2 = docsPush(res, this);
-        if (docs2.length && docs2[0] === 0) return;
+        let docs2 = docsPush(query, this);
         if (direction === 'top') {
           this.chats.push(...docs1);
         } else {
@@ -186,6 +171,7 @@ export class RoomComponent implements OnInit {
           if (!docs.length) e.target.disabled = true;//読み込むchatがなかったら以降infinatescroll無効
         }
         if (this.chats.length) {
+          this.chatChange();
           if (this.chats.length === docs.length) {
             setTimeout(() => {
               if (direction === "top" || !docs1.length) {
@@ -226,47 +212,37 @@ export class RoomComponent implements OnInit {
         }
       });
     });
-    function docsPush(res: Array<any>, that) {//firestoreの返り値を配列へ、同時に既読位置とツイッターがあるか記録
-      let docs = []; let doc; let change = false;
-      for (let i = 0; i < res.length; i++) {
-        doc = res[i].payload.doc.data();
-        if (res[i].type === 'modified') {
-          for (let j = 0; j < that.chats.length; j++) {
-            if (that.chats[j].upd.toDate().getTime() === doc.upd.toDate().getTime()) {
-              that.chats[j] = doc;
-            }
-          }
-          change = true;
-        } else if (res[i].type === "removed") {//課題：削除しても配列が減るだけで検知できず。
-          that.chats = that.chats.filter(chat => { return chat.upd.toDate().getTime() !== doc.upd.toDate().getTime(); });
-          change = true;
-        }
-        if (doc.upd.toDate().getTime() <= new Date(that.data.room.csd).getTime() && !that.readed) {
-          doc.readed = true;
+    function docsPush(query, that) {//firestoreの返り値を配列へ、同時に既読位置とツイッターがあるか記録
+      let docs = []
+      query.forEach(doc => {
+        let d = doc.data();
+        if (d.upd.toDate().getTime() <= new Date(that.data.room.csd).getTime() && !that.readed) {
+          d.readed = true;
           that.readed = true;
         };
-        if (doc.twitter) that.twitter = true;
-        docs.push(doc);
-      }
-      if (change) {
-        return [0];
-      } else {
-        return docs;
-      }
+        if (d.twitter) that.twitter = true;
+        docs.push(d);
+      });
+      return docs;
     }
     function scrollFin(that) {//無限スクロールを有効にする
       that.top.disabled = false; that.btm.disabled = false; that.loading = false;
     }
-    function chatChange(chats, that) {//読込済みのchat1Sb、chat2Sbからchangeイベント発火時
-      for (let i = 0; i < chats.length; i++) {
-        if (chats.type === 'modified') {
-          let chat = that.chats.filter(chat => { return chat.uid === chats[i].uid; });
-          if (chat.length) chat[0] = chats[i];
-        } else if (chats.type === "deleted") {
-          that.chats = that.chats.filter(chat => { return chat.uid !== chats[i].uid; });
+  }
+  chatChange() {
+    if (this.chatSb) this.chatSb.unsubscribe();
+    this.chatSb = this.dbcon.collection('chat', ref => ref.where('upd', '<=', this.chats[0].upd).
+      where('upd', '>=', this.chats[this.chats.length - 1].upd)).stateChanges(['modified']).
+      subscribe(action => {//チャットロード以降の変更   
+        console.log("chatchange");
+        let chat = action[0].payload.doc.data();
+        for (let i = 0; i < this.chats.length; i++) {
+          if (this.chats[i].upd.toDate().getTime() === chat.upd.toDate().getTime()) {
+            this.chats[i] = chat;
+            break;
+          }
         }
-      }
-    }
+      });
   }
   onScrollEnd() {
     this.content.getScrollElement().then(content => {
@@ -556,8 +532,8 @@ export class RoomComponent implements OnInit {
   ngOnDestroy() {
     if (this.userSb) this.userSb.unsubscribe();
     if (this.newchatSb) this.newchatSb.unsubscribe();
-    if (this.chat1Sb) this.chat1Sb.unsubscribe();
-    if (this.chat2Sb) this.chat2Sb.unsubscribe();
+    //if (this.chat1Sb) this.chat1Sb.unsubscribe();
+    //if (this.chat2Sb) this.chat2Sb.unsubscribe();
     if (this.mentionRoomsSb) this.mentionRoomsSb.unsubscribe();
     if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
     if (this.paramsSb) this.paramsSb.unsubscribe();
