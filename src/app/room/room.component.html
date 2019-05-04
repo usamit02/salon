@@ -8,7 +8,7 @@
   </ion-infinite-scroll>
   <p id="topmsg">{{topMsg}}</p>
   <ion-list>
-    <ion-item (click)=chatClick($event) (press)=chatPress($event,chat.uid,chat.na,i) class="chat" *ngFor="let chat of chats.reverse();index as i"
+    <ion-item (click)=chatClick($event) (press)=chatPress($event,chat.uid,chat.na,i) class="chat" *ngFor="let chat of chats|reverse;index as i"
       [class.readed]="chat.readed">
       <!--  <span class="none">{{chat.upd.toDate() | date:'MMM d, y, H:mm:ss:SSS'}}</span> -->
       <ion-item class="avatarItem" button="true" (click)="popMember($event,chat.uid)">

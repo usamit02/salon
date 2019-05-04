@@ -28,13 +28,14 @@ import { MemberComponent } from './member/member.component';
 import { SafePipe } from './pipe/safe.pipe';
 import { MediaPipe } from './pipe/media.pipe';
 import { ChatdatePipe } from './pipe/chatdate.pipe';
+import { ReversePipe } from './pipe/reverse.pipe';
 import { StoryComponent } from './story/story.component';
 import { NotifyComponent } from './notify/notify.component';
 import { DetailComponent } from './detail/detail.component';
 import { GridComponent } from './grid/grid.component';
 import { VideoComponent } from './video/video.component';
 @NgModule({
-  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, MediaPipe, ChatdatePipe, StoryComponent, NotifyComponent, DetailComponent, GridComponent, VideoComponent,],
+  declarations: [AppComponent, RoomComponent, MainComponent, MemberComponent, SafePipe, MediaPipe, ChatdatePipe, ReversePipe, StoryComponent, NotifyComponent, DetailComponent, GridComponent, VideoComponent,],
   entryComponents: [MemberComponent],
   imports: [
     BrowserModule,

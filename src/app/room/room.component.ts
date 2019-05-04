@@ -129,18 +129,18 @@ export class RoomComponent implements OnInit {
     }, 3000);
   }
   chatLoad(e, direction, cursor?: Date) {
-    console.log("chatload");
     if (!e) {
       this.loading = true;
     } else if (this.loading) {
       e.target.complete();
-      this.loading = false;
+      this.loading = false; console.log("load stop");
       return;//初回読み込み時の自動スクロールにion-infinate-scrollが反応するのを止める。
     }
+    console.log("chatload");
     let db; this.topMsg = ""; this.btmMsg = "";
     if (!cursor) {
       if (this.chats.length) {
-        cursor = direction === 'top' ? this.chats[this.chats.length - 1].upd.toDate() : this.chats[0].upd.toDate();
+        cursor = direction === 'btm' ? this.chats[this.chats.length - 1].upd.toDate() : this.chats[0].upd.toDate();
       } else {
         cursor = this.data.room.csd ? new Date(this.data.room.csd) : this.loadUpd;
       }
@@ -159,12 +159,16 @@ export class RoomComponent implements OnInit {
       db.get().subscribe(query => {
         if (uid !== this.data.user.id) return;//自動ログイン時重複読込対策 
         let docs2 = docsPush(query, this);
+        let a = this.chats;
+        this.chats = this.chats.reverse();
         if (direction === 'top') {
           this.chats.push(...docs1);
         } else {
           this.chats.push(...docs2);
           this.chats.unshift(...docs1.reverse());
         }
+        this.chats = [].concat(this.chats);
+        let c = this.chats;
         let docs = docs1.concat(docs2);
         if (e) {//infinatescrollからの場合、スピナーを止める
           e.target.complete();
@@ -226,7 +230,8 @@ export class RoomComponent implements OnInit {
       return docs;
     }
     function scrollFin(that) {//無限スクロールを有効にする
-      that.top.disabled = false; that.btm.disabled = false; that.loading = false;
+      that.top.disabled = false; that.btm.disabled = false;
+      setTimeout(() => { that.loading = false; }, 2000)
     }
   }
   chatChange() {
@@ -532,8 +537,7 @@ export class RoomComponent implements OnInit {
   ngOnDestroy() {
     if (this.userSb) this.userSb.unsubscribe();
     if (this.newchatSb) this.newchatSb.unsubscribe();
-    //if (this.chat1Sb) this.chat1Sb.unsubscribe();
-    //if (this.chat2Sb) this.chat2Sb.unsubscribe();
+    if (this.chatSb) this.chatSb.unsubscribe();
     if (this.mentionRoomsSb) this.mentionRoomsSb.unsubscribe();
     if (this.mentionDbSb) this.mentionDbSb.unsubscribe();
     if (this.paramsSb) this.paramsSb.unsubscribe();

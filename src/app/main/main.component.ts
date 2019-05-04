@@ -45,7 +45,7 @@ export class MainComponent {
     });
     this.data.roomState.subscribe((room: Room) => {//部屋移動時投稿窓閉じる
       if (!room.chat && this.data.post) {
-        tinymce.activeEditor.setContent('');
+        if (tinymce.activeEditor) tinymce.activeEditor.destroy();//tinymce.activeEditor.setContent('');
         this.data.post = false;
       }
     });
@@ -280,8 +280,8 @@ export class MainComponent {
             }
           });
         }, 1000);
-      } else {
-        tinymce.activeEditor.setContent('');
+      } else if (tinymce.activeEditor) {
+        tinymce.activeEditor.destroy();//tinymce.activeEditor.remove();//tinymce.activeEditor.setContent('');        
       }
       this.data.post = !this.data.post;
     } else {
