@@ -1,7 +1,7 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { PhpService } from '../provider/php.service';
 import { UiService } from '../provider/ui.service';
-import { DataService } from '../provider/data.service';
+import { DataService, Room } from '../provider/data.service';
 import { PHPURL } from '../../environments/environment';
 declare var twttr; declare var Payjp;
 @Component({
@@ -10,11 +10,12 @@ declare var twttr; declare var Payjp;
   styleUrls: ['./story.component.scss']
 })
 export class StoryComponent implements OnInit {
+  @Input() room: Room;
   storys = [];
   story: string;
   payid: number = 0;
   payjp;
-  years = ["2019", "2020", "2021", "2022", "2023", "2024"];
+  years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027", "2028", "2029"];
   months = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
   card = { last4: "", bland: "", exp_year: null, exp_month: null, change: false };
   newcard = { number: "4242424242424242", cvc: "123", exp_year: "2020", exp_month: "12" };
@@ -24,15 +25,13 @@ export class StoryComponent implements OnInit {
   trial_days;
   auth_days;
   visamaster = PHPURL + "img/visamaster.jpg";
-  @Input() room;
-  @Input() user;
   constructor(private php: PhpService, private ui: UiService, private data: DataService) { }
   ngOnInit() {
     this.storyLoad();
   }
   storyLoad() {
-    this.php.get("story", { uid: this.user.id, rid: this.room.id }).then(res => {
-      this.storys = res.main;
+    this.php.get("story", { uid: this.data.user.id, rid: this.room.id }).then(res => {
+      this.storys = res.main; console.log("storyLoad:" + this.room.id);
       setTimeout(() => {
         twttr.widgets.load();
       });
@@ -65,34 +64,34 @@ export class StoryComponent implements OnInit {
     }
   }
   pay(token: string) {
-    let charge: any = { rid: this.room.id, uid: this.user.id, na: this.user.na, token: token };
+    let charge: any = { rid: this.room.id, uid: this.data.user.id, na: this.data.user.na, token: token };
     if (this.payid >= 0) charge.sid = this.storys[this.payid].id;
     this.php.get("pay/charge", charge, "支払中").then(res => {
       if (res.typ === "plan") {//定額課金        
         this.data.readRooms();
         if (res.plan === 0) {
           this.ui.pop('ようこそ「' + this.room.na + "」へ");
-          this.data.room.lock = 0;
+          this.room.lock = 0;
           this.data.rooms.map(room => {
-            if (room.id === this.data.room.id) {
+            if (room.id === this.room.id) {
               room.lock = 0;
             }
           });
           this.data.allRooms.map(room => {
-            if (room.id === this.data.room.id) {
+            if (room.id === this.room.id) {
               room.lock = 0;
             }
           });
         } else if (res.plan) {
           this.ui.alert('「' + this.room.na + '」へ加入申込しました。\n審査完了まで最大' + res.plan + '日間お待ちください。');
-          this.data.room.lock = 1;
+          this.room.lock = 1;
           this.data.rooms.map(room => {
-            if (room.id === this.data.room.id) {
+            if (room.id === this.room.id) {
               room.lock = 1;
             }
           });
           this.data.allRooms.map(room => {
-            if (room.id === this.data.room.id) {
+            if (room.id === this.room.id) {
               room.lock = 1;
             }
           });
@@ -118,7 +117,7 @@ export class StoryComponent implements OnInit {
   }
   leave() {
     this.ui.confirm("退会", this.room.na + "を退会します。").then(() => [
-      this.php.get("pay/roompay", { uid: this.user.id, rid: this.room.id, ban: this.user.id }, "処理中").then(() => {
+      this.php.get("pay/roompay", { uid: this.data.user.id, rid: this.room.id, ban: this.data.user.id }, "処理中").then(() => {
         this.ui.pop(this.room.na + "から脱退しました。次回ログインから入室できません。");
       })
     ]);

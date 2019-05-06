@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { PopoverController } from '@ionic/angular';
+import { PopoverController, MenuController } from '@ionic/angular';
 import { PhpService } from './provider/php.service';
 import { User, Room, Mention, DataService } from './provider/data.service';
 import { Router } from '@angular/router';
@@ -23,7 +23,7 @@ export class AppComponent {
   auth = AUTH;
   mentionDbSb: Subscription;
   constructor(
-    public data: DataService, private php: PhpService, private router: Router,
+    public data: DataService, private php: PhpService, private router: Router, private menu: MenuController,
     private pop: PopoverController, private db: AngularFirestore, private ui: UiService, private socket: Socket,
   ) {
   }
@@ -108,6 +108,9 @@ export class AppComponent {
       this.router.navigate(['/home/room', room.id]);
     } else if (room.id === -101) {
       this.router.navigate(['/notify']);
+    }
+    if (!room.folder) {
+      this.menu.toggle('start');
     }
   }
   retRoom(home?: boolean) {//部屋一覧の親ボタン押したとき

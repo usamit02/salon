@@ -1,21 +1,22 @@
-<app-story *ngIf="data.room.story" [room]="data.room" [user]="data.user"></app-story>
-<app-grid *ngIf="data.room.folder" [rooms]="data.rooms"></app-grid>
+<app-story *ngIf="room.story" [room]="room"></app-story>
+<app-grid *ngIf="room.folder" [rooms]="data.rooms"></app-grid>
 <div id="mentionTop" class="msg"><span *ngIf="mentionTop" (click)="noticeClick('mentionTop')" class="mention">メンション↑{{mentionTop}}件</span></div>
-<ion-content [class.none]="!data.room.chat" id="chatscontent" #chatscontent (ionScrollEnd)="onScrollEnd()">
+<ion-content *ngIf="data.room.chat" id="chatscontent" #chatscontent (ionScrollEnd)="onScrollEnd()">
   <ion-infinite-scroll #top position="top" threshold="10px" (ionInfinite)="chatLoad($event,'top')">
     <ion-infinite-scroll-content loadingSpinner="bubbles">
     </ion-infinite-scroll-content>
   </ion-infinite-scroll>
   <p id="topmsg">{{topMsg}}</p>
   <ion-list>
-    <ion-item (click)=chatClick($event) (press)=chatPress($event,chat.uid,chat.na,i) class="chat" #chatItems *ngFor="let chat of chats;index as i"
+    <ion-item class="chat" #chatItems *ngFor="let chat of chats;index as i" (click)="chatClick($event,chat.uid,chat.na,i)"
       [class.readed]="chat.readed">
-      <ion-item class="avatarItem" button="true" (click)="popMember($event,chat.uid)">
+      <ion-item class="avatarItem" lines="none" button="true" (click)="popMember($event,chat.uid)">
         <ion-avatar class="avatar">
           <ion-img [src]="chat.avatar"></ion-img>
         </ion-avatar>
       </ion-item>
-      <div [id]="'chat' + i"><span class="chatna">{{chat.na}}</span>
+      <div [id]="'chat' + i">
+        <span class="chatna">{{chat.na}}</span>
         <span class="chatdate"> {{chat.upd.toDate()|chatdate}}</span>
         <span class="chatdate" *ngIf="chat.rev"> {{chat.rev.toDate()|chatdate}}修正</span>
         <div class="chattxt" [innerHtml]="chat.txt|safe:'html'"></div>
@@ -43,14 +44,16 @@
       </div>
     </ion-item>
   </ion-list>
-  <div (click)="btmClick()"><span style="color:lightgrey">{{btmMsg}}</span></div>
   <ion-infinite-scroll #btm position="bottom" threshold="10px" (ionInfinite)="chatLoad($event,'btm')">
     <ion-infinite-scroll-content loadingSpinner="bubbles">
     </ion-infinite-scroll-content>
   </ion-infinite-scroll>
 </ion-content>
-<div id="btmmsg" class="msg"><span class="mention" *ngIf="mentionBtm" (click)="noticeClick('mentionBtm')">メンション↓{{mentionBtm}}件</span>
-  <span class="newmsg" *ngIf="newUpds.length" (click)="noticeClick('newMsg')">新着メッセージ↓{{newUpds.length}}件</span></div>
+<div id="btmmsg" class="msg">
+  <span class="mention" *ngIf="mentionBtm" (click)="noticeClick('mention')">メンション↓{{mentionBtm}}件</span>
+  <span class="newmsg" *ngIf="newUpds.length" (click)="noticeClick('newMsg')">新着投稿↓{{newUpds.length}}件</span>
+  <span class="newmsg" *ngIf="!newUpds.length && latest" (click)="noticeClick('latest')">最新を表示↓</span>
+</div>
 
 <!--
 
