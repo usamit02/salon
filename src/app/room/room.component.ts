@@ -140,7 +140,7 @@ export class RoomComponent implements OnInit {
       return;//読込時の自動スクロールにion-infinate-scrollが反応するのを止める。
     }
     let infinate = e ? "infinate" : "init";
-    console.log("chatload:" + infinate + " " + direction + cursor);
+    console.log("chatload:" + infinate + " " + direction + " " + cursor);
     let db; this.topMsg = "";
     if (!cursor) {
       if (this.chats.length) {
@@ -170,7 +170,7 @@ export class RoomComponent implements OnInit {
           if (!docs.length) e.target.disabled = true;//読み込むchatがなかったら以降infinatescroll無効
         }
         if (this.chats.length || docs.length) {
-          if (!this.chats.length) {
+          if (!this.chats.length) {//新規読込
             let chatItemsSb = this.chatItems.changes.subscribe(() => {//チャット再描写後発火
               chatItemsSb.unsubscribe();
               if (direction === "top" || !docs1.length) {
@@ -178,23 +178,21 @@ export class RoomComponent implements OnInit {
               } else {
                 if (docs2.length) {
                   let content = <any>document.getElementById('chatscontent');
-                  let chats = content.children[2].children;
+                  let chatDivs = <any>document.getElementsByClassName('chat');
                   let cursorTop: number = 0; let cursorHeight: number = 0;
-                  for (let i = 0; i < chats.length; i++) {
+                  for (let i = 0; i < chatDivs.length; i++) {
                     if (this.chats[i].upd.toDate().getTime() >= cursor.getTime()) {
-                      cursorTop = chats[i].offsetTop; cursorHeight = chats[i].offsetHeight; break;
+                      cursorTop = chatDivs[i].offsetTop; cursorHeight = chatDivs[i].offsetHeight; break;
                     }
                   }
-                  if (chats[0].offsetTop + chats[0].offsetHeight - cursorTop > content.scrollHeight) {
+                  if (chatDivs[0].offsetTop + chatDivs[0].offsetHeight - cursorTop > content.scrollHeight) {
                     setTimeout(() => { this.content.scrollToTop().then(() => { scrollFin(this); }); });
                   } else {
                     setTimeout(() => { this.content.scrollToBottom().then(() => { scrollFin(this); }); });/*this.content.getScrollElement().then(content => {content.scrollTop = content.scrollHeight;});*/
                   }
                 } else {
-                  setTimeout(() => {
-                    this.topMsg = "既読投稿を表示↑";
-                    //this.content.scrollByPoint(0, 20, 300).then(() => { scrollFin(this); });
-                  });//this.data.scroll("btmOne");
+                  this.loading = false;
+                  this.content.scrollByPoint(0, 20, 300);
                 }
               }
               if (this.twitter) {
@@ -204,16 +202,16 @@ export class RoomComponent implements OnInit {
                 }, 1000);
               }
             });
+          } else {
+            scrollFin(this);
           }
           if (direction === 'top') {
             if (docs1.length < 20) { this.top.disabled = true; }
             this.chats.unshift(...docs1.reverse());
           } else {
             this.chats.push(...docs);
-            if (docs.length < 20 || cursor === this.loadUpd) {
+            if (docs.length < 20 || cursor.getTime() >= new Date(this.room.upd).getTime()) {
               this.btm.disabled = true;
-            } else {
-              this.btm.disabled = false;
             }
           }
           this.chatChange();
@@ -269,8 +267,8 @@ export class RoomComponent implements OnInit {
           this.deleteNotice(upds);
           let upd = upds[upds.length - 1];//画面上見えてる最新の日付
           if (!this.data.room.csd || new Date(this.data.room.csd).getTime() < upd.getTime()) {
-            //this.data.room.csd = upd;
-            //this.php.get("room", { uid: this.data.user.id, rid: this.rid, csd: this.data.dateFormat(upd) });
+            this.data.room.csd = upd;
+            this.php.get("room", { uid: this.data.user.id, rid: this.rid, csd: this.data.dateFormat(upd) });
           }
         }
       }

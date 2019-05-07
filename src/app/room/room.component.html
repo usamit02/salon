@@ -6,7 +6,7 @@
     <ion-infinite-scroll-content loadingSpinner="bubbles">
     </ion-infinite-scroll-content>
   </ion-infinite-scroll>
-  <p id="topmsg">{{topMsg}}</p>
+  <p class="topMsg">{{topMsg}}</p>
   <ion-list>
     <ion-item class="chat" #chatItems *ngFor="let chat of chats;index as i" (click)="chatClick($event,chat.uid,chat.na,i)"
       [class.readed]="chat.readed">

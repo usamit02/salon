@@ -3,7 +3,7 @@
     <ion-menu contentId="menu-content" side="start">
       <ion-header>
         <ion-toolbar>
-          <ion-item button="true" (click)="retRoom()" (press)="retRoom(true)">
+          <ion-item lines="none" button="true" (click)="retRoom()" (press)="retRoom(true)">
             <ion-title>{{data.folder.na}}</ion-title>
             <ion-icon *ngIf="data.folder.id!==1" name="exit"></ion-icon>
             <ion-icon *ngIf="data.folder.id===1 && bookmk" name="bookmark" color="danger"></ion-icon>
@@ -36,7 +36,7 @@
     <ion-menu contentId="menu-content" side="end">
       <ion-header>
         <ion-toolbar>
-          <ion-item>
+          <ion-item lines="none">
             <ion-searchbar placeholder="ユーザー検索" (ionClear)="searchMemberClear()" [(ngModel)]="member" (keyup.enter)="searchMember()"></ion-searchbar>
             <ion-button (click)="searchMember()">
               <ion-icon name="search"></ion-icon>

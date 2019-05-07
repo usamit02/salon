@@ -141,7 +141,8 @@ export class AppComponent {
         for (let i = 0; i < this.data.rooms.length; i++) {
           if (this.data.rooms[i].id in res.cursors) {
             let cursor = res.cursors[this.data.rooms[i].id];
-            let upd = 'upd' in cursor ? new Date(cursor.upd).getTime() / 1000 : Math.floor(this.data.rooms[i].upd.getTime() / 1000);
+            let upd = 'upd' in cursor ? new Date(cursor.upd).getTime() / 1000 :
+              Math.floor(new Date(this.data.rooms[i].upd).getTime() / 1000);
             this.data.rooms[i].new = upd > new Date(cursor.csd).getTime() / 1000;
           }
         }

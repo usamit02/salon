@@ -132,8 +132,8 @@ export class Room {
   story?: boolean = false;
   plan?: number = 0;
   bookmark?: boolean = false;
-  csd?: Date;
-  upd?: Date;
+  csd?: string;
+  upd?: string;
   new?: boolean = false;
   auth?: number = 0;
   count?: number = 0;
