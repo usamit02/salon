@@ -219,19 +219,4 @@ export class AppComponent {
     });
     return await popover.present();
   }
-  bookmark(room: Room) {
-    if (this.data.user.id) {
-      this.php.get("bookmark", { uid: this.data.user.id, rid: room.id, bookmark: room.bookmark }).then(() => {
-        let msg = room.bookmark ? "のブックマークを外しました。" : "をブックマークしました。";
-        this.ui.pop("「" + room.na + "」" + msg);
-        room.bookmark = !room.bookmark;
-        let rooms = this.data.rooms.filter(r => { return r.id === room.id; });
-        rooms[0].bookmark = !rooms[0].bookmark;
-        rooms = this.data.allRooms.filter(r => { return r.id === room.id; });
-        rooms[0].bookmark = !rooms[0].bookmark;
-      });
-    } else {
-      this.ui.pop("ログインすると長押しでお気に入りの部屋をブックマークに追加できます。");
-    }
-  }
 }

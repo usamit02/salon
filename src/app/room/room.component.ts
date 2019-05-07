@@ -210,7 +210,7 @@ export class RoomComponent implements OnInit {
             this.chats.unshift(...docs1.reverse());
           } else {
             this.chats.push(...docs);
-            if (docs.length < 20 || cursor.getTime() >= new Date(this.room.upd).getTime()) {
+            if (docs.length < 20 || cursor.getTime() >= new Date(this.room.upd).getTime() || cursor === this.loadUpd) {
               this.btm.disabled = true;
             }
           }

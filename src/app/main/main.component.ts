@@ -241,9 +241,11 @@ export class MainComponent {
   }
   rtcOpen(action) {
     this.rtc = action;
+    this.head = false;
   }
   rtcClose() {
     this.rtc = "";
+    this.head = true;
   }
   fab(button) {
     if (button === "post") {
@@ -253,15 +255,15 @@ export class MainComponent {
             selector: ".tiny",
             menubar: false,
             inline: true,
-            //theme: 'inlite',
+            /*theme: 'inlite',
             mobile: {
               theme: 'mobile',
               plugins: ['autosave', 'emoticons', 'lists', 'autolink'],
               toolbar: ['undo', 'emoticons', 'bold', 'italic', 'styleselect']
             },
-            language_url: 'https://bloggersguild.cf/js/ja.js',
+            language_url: 'https://bloggersguild.cf/js/ja.js',*/
             plugins: [
-              'autolink autosave codesample link lists advlist table paste emoticons'
+              'emoticons autolink autosave codesample link lists advlist table paste'
             ],
             toolbar: 'undo redo | emoticons | forecolor styleselect | blockquote link copy paste',
             contextmenu: 'restoredraft | inserttable cell row column deletetable | bullist numlist',
@@ -298,6 +300,22 @@ export class MainComponent {
       this.afAuth.auth.signInWithPopup(provider).catch(reason => {
         this.ui.pop(button + "のログインに失敗しました。");
       });
+    }
+  }
+  bookmark() {
+    if (this.data.user.id) {
+      let room = this.data.room;
+      this.php.get("bookmark", { uid: this.data.user.id, rid: room.id, bookmark: room.bookmark }).then(() => {
+        let msg = room.bookmark ? "のブックマークを外しました。" : "をブックマークしました。";
+        this.ui.pop("「" + room.na + "」" + msg);
+        room.bookmark = !room.bookmark;
+        let rooms = this.data.rooms.filter(r => { return r.id === room.id; });
+        rooms[0].bookmark = !rooms[0].bookmark;
+        rooms = this.data.allRooms.filter(r => { return r.id === room.id; });
+        rooms[0].bookmark = !rooms[0].bookmark;
+      });
+    } else {
+      this.ui.pop("ログインすると長押しでお気に入りの部屋をブックマークに追加できます。");
     }
   }
   ngOnDestroy() {

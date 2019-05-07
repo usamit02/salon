@@ -4,16 +4,16 @@
     <ion-buttons slot="start">
       <ion-menu-button menu="start"></ion-menu-button>
     </ion-buttons>
-    <ion-title>{{data.room.na}}</ion-title>
+    <ion-title (press)="bookmark()">{{data.room.na}}</ion-title>
     <ion-buttons slot="end">
       <ion-menu-button menu="end">
         <ion-icon name="contacts"></ion-icon>
       </ion-menu-button>
     </ion-buttons>
   </ion-toolbar>
-  <app-video [rtc]="rtc" (stop)="rtc=''"></app-video>
 </ion-header>
 <ion-content>
+  <app-video [rtc]="rtc" (stop)="rtc=''"></app-video>
   <ion-fab vertical="top" horizontal="end" slot="fixed">
     <ion-fab-button color="ligth">
       <ion-icon name="menu"></ion-icon>

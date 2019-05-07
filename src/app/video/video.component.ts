@@ -36,18 +36,19 @@ export class VideoComponent implements OnInit {
     let myVideo: HTMLVideoElement;
     let yourVideo: HTMLVideoElement;
     let audio: HTMLAudioElement;
-    let media = document.getElementById("media");//document.getElementById("header").insertAdjacentHTML('beforeend', '<div id="media"></div>');
+    let mediaDiv = <HTMLDivElement>document.getElementById("media");//document.getElementById("header").insertAdjacentHTML('beforeend', '<div id="media"></div>');
     if (rtc !== "headset") {
       let screen = rtc === 'videocam' ? { video: { width: { min: 240, max: 320 }, height: { min: 180, max: 240 } }, audio: true } : { video: false, audio: true };//{ video: { width: { min: 240, max: 320 }, height: { min: 180, max: 240 } }, audio: true } :
       navigator.mediaDevices.getUserMedia(screen).then(stream => {
         localStream = stream;
         if (rtc === 'videocam') {
-          media.insertAdjacentHTML('beforeend', '<video id="myVideo"></video>');
+          mediaDiv.insertAdjacentHTML('beforeend', '<video id="myVideo" controls></video>');
           myVideo = <HTMLVideoElement>document.getElementById('myVideo');
           myVideo.srcObject = stream;
           myVideo.onloadedmetadata = (e) => {
             setTimeout(() => {
               myVideo.muted = true;
+              myVideo.play();
               //this.content.resize();
             }, 1000);
           };
@@ -69,14 +70,14 @@ export class VideoComponent implements OnInit {
         let pid = stream.peerId.split("_");
         if (pid[1] !== this.data.user.id) {
           if (pid[0] === "mic") {
-            media.insertAdjacentHTML('beforeend', '<audio id="audio"></audio>');
+            mediaDiv.insertAdjacentHTML('beforeend', '<audio id="audio"></audio>');
             audio = <HTMLAudioElement>document.getElementById('audio');
             audio.srcObject = stream;
             audioPeerId = stream.peerId;
             audio.play();
           } else if (pid[0] === "videocam") {
             if (!myVideo) {
-              media.insertAdjacentHTML('beforeend', '<video id="myVideo"></video>');
+              mediaDiv.insertAdjacentHTML('beforeend', '<video id="myVideo" controls></video>');
               myVideo = <HTMLVideoElement>document.getElementById('myVideo');
               myVideo.srcObject = stream;
               myVideoPeerId = stream.peerId;
@@ -88,7 +89,7 @@ export class VideoComponent implements OnInit {
               };
             } else {
               if (!yourVideo) {
-                media.insertAdjacentHTML('beforeend', '<video id="yourVideo"></video>');
+                mediaDiv.insertAdjacentHTML('beforeend', '<video id="yourVideo"></video>');
                 yourVideo = <HTMLVideoElement>document.getElementById('yourVideo');
                 yourVideo.srcObject = stream;
                 yourVideoPeerId = stream.peerId;
